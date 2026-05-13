@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "../lib/db.js";
 import { authenticate } from "../lib/auth.js";
@@ -47,6 +48,9 @@ export const gamesRoutes: FastifyPluginAsync = async (app) => {
     // PostGIS raw query for radius filtering
     const offset = (page - 1) * limit;
     const radiusMetres = radiusToMetres(radiusKm);
+    const sportFilter = sport ? Prisma.sql`AND g.sport = ${sport}` : Prisma.empty;
+    const skillLevelFilter = skillLevel ? Prisma.sql`AND g."skillLevel" = ${skillLevel}` : Prisma.empty;
+    const genderFilter = gender ? Prisma.sql`AND g.gender = ${gender}` : Prisma.empty;
 
     // Using Prisma $queryRaw with PostGIS ST_DWithin
     const games = await db.$queryRaw<any[]>`
@@ -71,9 +75,9 @@ export const gamesRoutes: FastifyPluginAsync = async (app) => {
         )
         AND g.status = 'open'
         AND g."dateTime" > NOW()
-        ${sport ? db.$queryRaw`AND g.sport = ${sport}` : db.$queryRaw``}
-        ${skillLevel ? db.$queryRaw`AND g."skillLevel" = ${skillLevel}` : db.$queryRaw``}
-        ${gender ? db.$queryRaw`AND g.gender = ${gender}` : db.$queryRaw``}
+        ${sportFilter}
+        ${skillLevelFilter}
+        ${genderFilter}
       ORDER BY distance_km ASC
       LIMIT ${limit} OFFSET ${offset}
     `;
