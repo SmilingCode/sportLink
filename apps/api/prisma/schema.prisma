@@ -1,0 +1,116 @@
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Sport {
+  soccer
+  basketball
+  volleyball
+  spikeball
+}
+
+enum SkillLevel {
+  beginner
+  intermediate
+  competitive
+}
+
+enum Gender {
+  open
+  men
+  women
+  mixed
+}
+
+enum RecurringType {
+  one_off
+  weekly
+  fortnightly
+}
+
+enum GameStatus {
+  open
+  full
+  cancelled
+  completed
+}
+
+enum VerificationStatus {
+  unverified
+  email_verified
+  phone_verified
+  id_verified
+  fully_verified
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id                 String             @id @default(cuid())
+  name               String
+  email              String             @unique
+  passwordHash       String
+  avatarUrl          String?
+  phone              String?
+  lat                Float?
+  lng                Float?
+  suburb             String?
+  verificationStatus VerificationStatus @default(unverified)
+  stripeSessionId    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  hostedGames  Game[]
+  memberships  GameMember[]
+}
+
+model Game {
+  id             String        @id @default(cuid())
+  title          String
+  sport          Sport
+  skillLevel     SkillLevel
+  gender         Gender
+  dateTime       DateTime
+  recurring      RecurringType @default(one_off)
+  lat            Float
+  lng            Float
+  address        String
+  suburb         String
+  minPlayers     Int
+  maxPlayers     Int
+  costPerPlayer  Int           @default(0) // AUD cents
+  equipmentNotes String?
+  description    String?
+  status         GameStatus    @default(open)
+  hostId         String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  host    User         @relation(fields: [hostId], references: [id])
+  members GameMember[]
+
+  @@index([lat, lng])
+  @@index([sport])
+  @@index([status])
+  @@index([dateTime])
+}
+
+model GameMember {
+  gameId    String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, userId])
+}
