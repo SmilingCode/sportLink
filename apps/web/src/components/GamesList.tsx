@@ -34,28 +34,28 @@ export default function GamesList() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-52 rounded-xl bg-gray-100 animate-pulse" />
+          <div key={i} className="h-[26rem] animate-pulse rounded-2xl border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)]" />
         ))}
       </div>
     );
   }
 
   if (error) {
-    return <p className="text-sm text-red-500 mt-4">{error}</p>;
+    return <p className="mt-4 text-sm text-[#ff8f87]">{error}</p>;
   }
 
   if (games.length === 0) {
     return (
-      <p className="text-sm text-gray-400 mt-8 text-center">
+      <p className="mt-8 text-center text-sm text-[var(--sportlink-text-soft)]">
         No games found in this area. Be the first to create one!
       </p>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
       {games.map((game) => (
         <GameCard key={game.id} game={game} />
       ))}
