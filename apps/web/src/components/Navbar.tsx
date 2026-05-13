@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { UserDTO } from "@sportlink/types";
+import { clearStoredSession, getStoredSession } from "@/lib/auth";
 
 const navItems = [
   { href: "/", label: "Browse games" },
@@ -11,6 +14,28 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<UserDTO | null>(null);
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setUser(getStoredSession()?.user ?? null);
+    };
+
+    syncAuth();
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("sportlink-auth-changed", syncAuth);
+
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("sportlink-auth-changed", syncAuth);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    clearStoredSession();
+    router.push("/");
+  };
 
   return (
     <header className="px-6 pt-5 sm:px-8">
@@ -19,20 +44,35 @@ export default function Navbar() {
           <Link href="/" className="text-[2rem] font-semibold tracking-[-0.04em] text-[var(--sportlink-green)]">
             Sportlink
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/auth/login"
-              className="rounded-xl border border-[#66665f] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:border-[#7b7a73] hover:bg-[#353530]"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="rounded-xl border border-[#8a887f] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:bg-[#353530]"
-            >
-              Sign up
-            </Link>
-          </div>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="hidden rounded-xl border border-[#5f5e58] bg-[#232321] px-4 py-2 text-sm text-[#d9d7ce] sm:block">
+                Hi, {user.name}
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl border border-[#7f7d74] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:bg-[#353530]"
+              >
+                Log out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/auth/login"
+                className="rounded-xl border border-[#66665f] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:border-[#7b7a73] hover:bg-[#353530]"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-xl border border-[#8a887f] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:bg-[#353530]"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
 
         <nav className="flex items-center gap-8 px-5 sm:px-6">
