@@ -18,7 +18,9 @@ export default function FilterBar() {
           <option>Within 20 km</option>
           <option>Within 60 km</option>
         </select>
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">⌄</span>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">
+          ⌄
+        </span>
       </div>
 
       <div className="relative">
@@ -29,7 +31,9 @@ export default function FilterBar() {
           <option>Volleyball</option>
           <option>Spikeball</option>
         </select>
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">⌄</span>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">
+          ⌄
+        </span>
       </div>
 
       <div className="relative">
@@ -39,7 +43,9 @@ export default function FilterBar() {
           <option>Intermediate</option>
           <option>Competitive</option>
         </select>
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">⌄</span>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">
+          ⌄
+        </span>
       </div>
 
       <div className="relative">
@@ -50,7 +56,9 @@ export default function FilterBar() {
           <option>Women</option>
           <option>Mixed</option>
         </select>
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">⌄</span>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--sportlink-text-soft)]">
+          ⌄
+        </span>
       </div>
     </div>
   );

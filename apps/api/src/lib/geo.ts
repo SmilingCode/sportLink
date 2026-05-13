@@ -31,8 +31,7 @@ export function haversineKm(a: GeoPoint, b: GeoPoint): number {
   const sinDlat = Math.sin(dLat / 2);
   const sinDlng = Math.sin(dLng / 2);
   const chord =
-    sinDlat * sinDlat +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinDlng * sinDlng;
+    sinDlat * sinDlat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinDlng * sinDlng;
   return R * 2 * Math.atan2(Math.sqrt(chord), Math.sqrt(1 - chord));
 }
 

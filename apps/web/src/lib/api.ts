@@ -10,11 +10,7 @@ import type {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-  token?: string
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -38,7 +34,7 @@ export const gamesApi = {
     const params = new URLSearchParams(
       Object.entries(query)
         .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k, String(v)]),
     );
     return request<PaginatedResponse<GameSummaryDTO>>(`/games?${params}`);
   },

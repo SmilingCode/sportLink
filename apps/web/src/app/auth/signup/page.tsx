@@ -45,7 +45,9 @@ export default function SignupPage() {
     <main className="mx-auto max-w-6xl px-6 py-6 sm:px-8">
       <section className="mx-auto max-w-md rounded-2xl border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.25)]">
         <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#f1efe8]">Sign up</h1>
-        <p className="mt-1 text-sm text-[var(--sportlink-text-soft)]">Create your Sportlink account.</p>
+        <p className="mt-1 text-sm text-[var(--sportlink-text-soft)]">
+          Create your Sportlink account.
+        </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <label className="block text-sm text-[#dddacf]">
@@ -116,4 +118,3 @@ export default function SignupPage() {
     </main>
   );
 }
-

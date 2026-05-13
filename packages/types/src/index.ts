@@ -70,24 +70,23 @@ export interface GameDTO {
   createdAt: string;
 }
 
-export interface GameSummaryDTO
-  extends Pick<
-    GameDTO,
-    | "id"
-    | "title"
-    | "sport"
-    | "skillLevel"
-    | "gender"
-    | "dateTime"
-    | "location"
-    | "distanceKm"
-    | "minPlayers"
-    | "maxPlayers"
-    | "currentPlayers"
-    | "costPerPlayer"
-    | "status"
-    | "host"
-  > {}
+export interface GameSummaryDTO extends Pick<
+  GameDTO,
+  | "id"
+  | "title"
+  | "sport"
+  | "skillLevel"
+  | "gender"
+  | "dateTime"
+  | "location"
+  | "distanceKm"
+  | "minPlayers"
+  | "maxPlayers"
+  | "currentPlayers"
+  | "costPerPlayer"
+  | "status"
+  | "host"
+> {}
 
 // ─── API request bodies ───────────────────────────────────────────────────────
 

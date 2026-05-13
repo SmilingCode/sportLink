@@ -15,7 +15,11 @@ const SKILL_LABELS: Record<string, string> = {
 };
 
 function MetaRow({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center gap-2 text-[15px] text-[var(--sportlink-text-soft)]">{children}</div>;
+  return (
+    <div className="flex items-center gap-2 text-[15px] text-[var(--sportlink-text-soft)]">
+      {children}
+    </div>
+  );
 }
 
 function MetaIcon({ children }: { children: React.ReactNode }) {
@@ -82,10 +86,8 @@ export default function GameCard({ game }: { game: GameSummaryDTO }) {
             <LocationIcon />
           </MetaIcon>
           <span>
-          {game.location.suburb}
-          {game.distanceKm !== undefined && (
-            <span> · {game.distanceKm.toFixed(1)} km away</span>
-          )}
+            {game.location.suburb}
+            {game.distanceKm !== undefined && <span> · {game.distanceKm.toFixed(1)} km away</span>}
           </span>
         </MetaRow>
 
@@ -94,9 +96,9 @@ export default function GameCard({ game }: { game: GameSummaryDTO }) {
             <CheckIcon />
           </MetaIcon>
           <span>
-          {game.costPerPlayer === 0
-            ? "Free"
-            : `$${(game.costPerPlayer / 100).toFixed(0)} per player`}
+            {game.costPerPlayer === 0
+              ? "Free"
+              : `$${(game.costPerPlayer / 100).toFixed(0)} per player`}
             {game.costPerPlayer === 0 ? " · Ball provided" : " · Bibs provided"}
           </span>
         </MetaRow>
@@ -132,8 +134,21 @@ export default function GameCard({ game }: { game: GameSummaryDTO }) {
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
-      <rect x="2.25" y="3.25" width="11.5" height="10.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5 1.75V4.5M11 1.75V4.5M2.5 6.25H13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <rect
+        x="2.25"
+        y="3.25"
+        width="11.5"
+        height="10.5"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M5 1.75V4.5M11 1.75V4.5M2.5 6.25H13.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -142,7 +157,12 @@ function UserIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
       <circle cx="8" cy="5.25" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M3.25 13.25C3.25 10.9028 5.15279 9 7.5 9H8.5C10.8472 9 12.75 10.9028 12.75 13.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M3.25 13.25C3.25 10.9028 5.15279 9 7.5 9H8.5C10.8472 9 12.75 10.9028 12.75 13.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -150,7 +170,11 @@ function UserIcon() {
 function LocationIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
-      <path d="M8 14C10.5 11.25 12.25 8.98744 12.25 6.5C12.25 4.01472 10.4853 2.25 8 2.25C5.51472 2.25 3.75 4.01472 3.75 6.5C3.75 8.98744 5.5 11.25 8 14Z" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M8 14C10.5 11.25 12.25 8.98744 12.25 6.5C12.25 4.01472 10.4853 2.25 8 2.25C5.51472 2.25 3.75 4.01472 3.75 6.5C3.75 8.98744 5.5 11.25 8 14Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
       <circle cx="8" cy="6.5" r="1.5" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
@@ -159,7 +183,13 @@ function LocationIcon() {
 function CheckIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-4 w-4">
-      <path d="M3 8.25L6.25 11.5L13 4.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3 8.25L6.25 11.5L13 4.75"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -167,7 +197,12 @@ function CheckIcon() {
 function StarIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-3.5 w-3.5">
-      <path d="M8 2.25L9.69208 5.67946L13.5 6.23278L10.75 8.91353L11.3992 12.7067L8 10.9195L4.60081 12.7067L5.25 8.91353L2.5 6.23278L6.30792 5.67946L8 2.25Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path
+        d="M8 2.25L9.69208 5.67946L13.5 6.23278L10.75 8.91353L11.3992 12.7067L8 10.9195L4.60081 12.7067L5.25 8.91353L2.5 6.23278L6.30792 5.67946L8 2.25Z"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

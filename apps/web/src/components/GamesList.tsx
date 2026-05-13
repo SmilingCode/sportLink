@@ -39,7 +39,10 @@ export default function GamesList() {
     return (
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-[26rem] animate-pulse rounded-2xl border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)]" />
+          <div
+            key={i}
+            className="h-[26rem] animate-pulse rounded-2xl border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)]"
+          />
         ))}
       </div>
     );

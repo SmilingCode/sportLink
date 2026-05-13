@@ -8,7 +8,11 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-5 sm:px-8">
       <section className="rounded-[18px] border border-transparent bg-transparent">
-        <Suspense fallback={<div className="mb-5 text-sm text-[var(--sportlink-text-soft)]">Loading filters...</div>}>
+        <Suspense
+          fallback={
+            <div className="mb-5 text-sm text-[var(--sportlink-text-soft)]">Loading filters...</div>
+          }
+        >
           <FilterBar />
         </Suspense>
         <Suspense fallback={<GamesSkeleton />}>

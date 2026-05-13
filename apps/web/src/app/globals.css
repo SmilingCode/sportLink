@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --sportlink-green: #1D9E75;
+  --sportlink-green: #1d9e75;
   --sportlink-bg: #1f201d;
   --sportlink-panel: #2a2a27;
   --sportlink-panel-strong: #31312d;

@@ -41,7 +41,10 @@ export default function Navbar() {
     <header className="px-6 pt-5 sm:px-8">
       <div className="mx-auto max-w-6xl overflow-hidden rounded-[18px] border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
         <div className="flex items-center justify-between gap-4 border-b border-[var(--sportlink-border)] px-5 py-4 sm:px-6">
-          <Link href="/" className="text-[2rem] font-semibold tracking-[-0.04em] text-[var(--sportlink-green)]">
+          <Link
+            href="/"
+            className="text-[2rem] font-semibold tracking-[-0.04em] text-[var(--sportlink-green)]"
+          >
             Sportlink
           </Link>
           {user ? (
