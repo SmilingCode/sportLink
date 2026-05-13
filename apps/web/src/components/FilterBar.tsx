@@ -23,7 +23,6 @@ export default function FilterBar() {
 
       <div className="relative">
         <select className="w-full rounded-xl border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)] px-4 py-3 pr-12 text-[15px] font-semibold text-[#efede5] outline-none transition focus:border-[#6f6e67]">
-        <option>Within 10 km</option>
           <option>All sports</option>
           <option>Soccer</option>
           <option>Basketball</option>
