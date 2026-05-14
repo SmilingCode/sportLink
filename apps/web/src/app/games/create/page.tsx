@@ -3,6 +3,7 @@
 import type { CreateGameBody } from "@sportlink/types";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Shield, ShieldCheck } from "lucide-react";
 import { gamesApi } from "@/lib/api";
 import { getStoredToken } from "@/lib/auth";
 import MapPicker from "@/components/MapPicker";
@@ -22,6 +23,7 @@ type CreateFormState = {
   costPerPlayer: string;
   equipmentNotes: string;
   description: string;
+  verifiedPlayersOnly: boolean;
   addressInput: string;
   lat: string;
   lng: string;
@@ -40,6 +42,7 @@ const DEFAULT_FORM: CreateFormState = {
   costPerPlayer: "0",
   equipmentNotes: "",
   description: "",
+  verifiedPlayersOnly: true,
   addressInput: "",
   lat: "-33.8688",
   lng: "151.2093",
@@ -102,8 +105,15 @@ export default function CreateGamePage() {
     return Boolean(form.title.trim() && form.date && form.time && form.addressInput.trim());
   }, [form.addressInput, form.date, form.time, form.title]);
 
-  const updateField = (name: keyof CreateFormState, value: string) => {
+  const updateField = (name: keyof CreateFormState, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const toggleVerifiedPlayersOnly = () => {
+    setForm((prev) => ({
+      ...prev,
+      verifiedPlayersOnly: !prev.verifiedPlayersOnly,
+    }));
   };
 
   const handleMapPick = ({ lat, lng, address }: { lat: number; lng: number; address: string }) => {
@@ -336,6 +346,48 @@ export default function CreateGamePage() {
             options={genderOptions}
           />
         </SectionCard>
+
+        <div className="rounded-2xl border border-[rgba(0,200,148,0.6)] bg-[#2a2a27] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(0,200,148,0.14)] text-[var(--sportlink-green)]">
+                <Shield className="h-5 w-5" strokeWidth={1.8} />
+              </div>
+
+              <div className="min-w-0">
+                <h3 className="font-semibold text-[#f3f2ee]">Verified players only</h3>
+                <p className="text-sm leading-5 text-[var(--sportlink-text-soft)]">
+                  Only players who have completed identity verification can join this game.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleVerifiedPlayersOnly}
+              aria-pressed={form.verifiedPlayersOnly}
+              className={`relative inline-flex h-9 w-16 shrink-0 items-center rounded-full border px-1 transition ${
+                form.verifiedPlayersOnly
+                  ? "border-[rgba(0,200,148,0.65)] bg-[rgba(0,200,148,0.2)]"
+                  : "border-[var(--sportlink-border)] bg-[#35352f]"
+              }`}
+            >
+              <span
+                className={`inline-block h-7 w-7 rounded-full bg-[#f7f7f5] shadow-sm transition-transform ${
+                  form.verifiedPlayersOnly ? "translate-x-7" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-[rgba(0,200,148,0.55)] bg-[rgba(0,200,148,0.08)] px-4 py-3 text-sm leading-5 text-[var(--sportlink-green)]">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.8} />
+            <span>
+              Players must complete ID + selfie verification via Stripe Identity before joining.
+              This keeps your game safe.
+            </span>
+          </div>
+        </div>
 
         <SectionCard title="Location">
           <MapPicker

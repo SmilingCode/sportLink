@@ -128,9 +128,20 @@ Set env vars in Railway dashboard. Add a PostgreSQL + Redis service.
 
 ## TO-DO
 
-- [] cookie-based auth
+- [] cookie-based Auth
   Auth hardening: migrate from localStorage token to HttpOnly cookie.
   Update login/signup to set server cookie instead of storing token in browser JS.
   Update authenticated API calls to use cookie session.
   Implement logout that clears cookie.
   Add CSRF protection strategy and test login/create-game/logout flow.
+
+- [] Save draft with "draft" Game status
+    enum GameStatus {
+        draft      // ← add this
+        open
+        full
+        cancelled
+        completed
+    }
+
+- [] Add email verification
