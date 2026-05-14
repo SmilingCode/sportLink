@@ -17,6 +17,15 @@ export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState<UserDTO | null>(null);
 
+  // Check if we're on a game detail page, but exclude the create route.
+  const isGameDetailPage = pathname ? /^\/games\/(?!create$)[^/]+$/.test(pathname) : false;
+
+  const navItems = [
+    { href: "/", label: isGameDetailPage ? "Game details" : "Browse games" },
+    { href: "/games/create", label: "Create game" },
+    { href: "/profile", label: "My profile" },
+  ];
+
   useEffect(() => {
     const syncAuth = () => {
       setUser(getStoredSession()?.user ?? null);
@@ -80,7 +89,7 @@ export default function Navbar() {
 
         <nav className="flex items-center gap-8 px-5 sm:px-6">
           {navItems.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname?.startsWith(item.href);
+            const active = item.href === "/" ? pathname === "/" || isGameDetailPage : pathname === item.href;
 
             return (
               <Link
