@@ -66,6 +66,11 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     }),
 
+  verifyEmail: (token: string) =>
+    request<{ verified: boolean }>(
+      `/auth/verify-email?${new URLSearchParams({ token }).toString()}`,
+    ),
+
   me: (token: string) => request<UserDTO>("/auth/me", {}, token),
 };
 

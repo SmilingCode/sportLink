@@ -109,22 +109,22 @@ function buildVerificationSteps(status: UserDTO["verificationStatus"]): Verifica
 
   return [
     {
-      title: "Email confirmed",
+      title: "Email verification",
       detail: "jordan@example.com",
-      complete: completed.has("Email confirmed"),
-      actionLabel: completed.has("Government ID") ? undefined : "Start →",
+      complete: completed.has("Email verification"),
+      actionLabel: completed.has("Government ID verification") ? undefined : "Start →",
     },
     {
-      title: "Phone number verified",
+      title: "Phone number verification",
       detail: "+61 4•• ••• •••",
-      complete: completed.has("Phone number verified"),
-      actionLabel: completed.has("Government ID") ? undefined : "Start →",
+      complete: completed.has("Phone number verification"),
+      actionLabel: completed.has("Government ID verification") ? undefined : "Start →",
     },
     {
-      title: "Government ID",
+      title: "Government ID verification",
       detail: "Upload a passport or driver's licence",
-      complete: completed.has("Government ID"),
-      actionLabel: completed.has("Government ID") ? undefined : "Start →",
+      complete: completed.has("Government ID verification"),
+      actionLabel: completed.has("Government ID verification") ? undefined : "Start →",
     },
     {
         title: "Selfie verification",

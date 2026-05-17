@@ -6,6 +6,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  RESEND_API_KEY: z.string().startsWith("re_").optional(),
+  RESEND_FROM_EMAIL: z.string().email().default("noreply@localhost.dev"),
   STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
   STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
 });
