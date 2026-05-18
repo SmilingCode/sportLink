@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check, ChevronDown, ChevronUp, Mail } from "lucide-react";
 import type { UserDTO } from "@sportlink/types";
 import { getStoredSession } from "@/lib/auth";
 
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<UserDTO | null>(null);
+  const [emailCardOpen, setEmailCardOpen] = useState(true);
 
   useEffect(() => {
     const session = getStoredSession();
@@ -41,7 +43,8 @@ export default function ProfilePage() {
     return null;
   }
 
-  const verificationSteps = buildVerificationSteps(user.verificationStatus);
+  const verificationState = getVerificationState(user.verificationStatus);
+  const verificationSteps = buildVerificationSteps(verificationState);
   const joinedMonth = new Date(user.createdAt).toLocaleDateString("en-AU", {
     month: "long",
     year: "numeric",
@@ -84,8 +87,14 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-3">
+            <EmailVerificationCard
+              email={user.email}
+              complete={verificationState.emailVerified}
+              open={emailCardOpen}
+              onToggle={() => setEmailCardOpen((current) => !current)}
+            />
             {verificationSteps.map((step, index) => (
-              <VerificationRow key={step.title} step={step} index={index + 1} />
+              <VerificationRow key={step.title} step={step} index={index + 2} />
             ))}
           </div>
         </section>
@@ -94,44 +103,43 @@ export default function ProfilePage() {
   );
 }
 
-function buildVerificationSteps(status: UserDTO["verificationStatus"]): VerificationStep[] {
-  const completed = new Set<VerificationStep["title"]>();
+function getVerificationState(status: UserDTO["verificationStatus"]) {
+  const emailVerified =
+    status === "email_verified" ||
+    status === "phone_verified" ||
+    status === "id_verified" ||
+    status === "fully_verified";
+  const phoneVerified =
+    status === "phone_verified" || status === "id_verified" || status === "fully_verified";
+  const idVerified = status === "id_verified" || status === "fully_verified";
 
-  if (status === "email_verified" || status === "phone_verified" || status === "id_verified" || status === "fully_verified") {
-    completed.add("Email confirmed");
-  }
-  if (status === "phone_verified" || status === "id_verified" || status === "fully_verified") {
-    completed.add("Phone number verified");
-  }
-  if (status === "id_verified" || status === "fully_verified") {
-    completed.add("Government ID");
-  }
+  return {
+    emailVerified,
+    phoneVerified,
+    idVerified,
+  };
+}
 
+function buildVerificationSteps(state: ReturnType<typeof getVerificationState>): VerificationStep[] {
   return [
-    {
-      title: "Email verification",
-      detail: "jordan@example.com",
-      complete: completed.has("Email verification"),
-      actionLabel: completed.has("Government ID verification") ? undefined : "Start →",
-    },
     {
       title: "Phone number verification",
       detail: "+61 4•• ••• •••",
-      complete: completed.has("Phone number verification"),
-      actionLabel: completed.has("Government ID verification") ? undefined : "Start →",
+      complete: state.phoneVerified,
+      actionLabel: state.phoneVerified ? undefined : "Start →",
     },
     {
       title: "Government ID verification",
       detail: "Upload a passport or driver's licence",
-      complete: completed.has("Government ID verification"),
-      actionLabel: completed.has("Government ID verification") ? undefined : "Start →",
+      complete: state.idVerified,
+      actionLabel: state.idVerified ? undefined : "Start →",
     },
     {
-        title: "Selfie verification",
-        detail: "Take a selfie to verify your identity",
-        complete: completed.has("Selfie verification"),
-        actionLabel: completed.has("Selfie verification") ? undefined : "Start →",
-    }
+      title: "Selfie verification",
+      detail: "Take a selfie to verify your identity",
+      complete: false,
+      actionLabel: "Start →",
+    },
   ];
 }
 
@@ -148,6 +156,97 @@ function verificationSummary(status: UserDTO["verificationStatus"]) {
     default:
       return "0/3";
   }
+}
+
+function EmailVerificationCard({
+  email,
+  complete,
+  open,
+  onToggle,
+}: {
+  email: string;
+  complete: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={`overflow-hidden rounded-[2rem] border ${
+        complete
+          ? "border-[rgba(0,200,148,0.28)] bg-[#2b2a28]"
+          : "border-[rgba(0,200,148,0.75)] bg-[#2b2a28]"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-4 px-5 py-5 text-left sm:px-7"
+        aria-expanded={open}
+      >
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+            complete
+              ? "bg-[rgba(0,200,148,0.18)] text-[var(--sportlink-green)]"
+              : "bg-[var(--sportlink-green)] text-[#f4fbf7]"
+          }`}
+        >
+          {complete ? <Check className="h-5 w-5" strokeWidth={2.25} /> : 1}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="text-base font-semibold tracking-[-0.02em] text-[#f1efe8]">
+            Email verification
+          </div>
+          <p className="truncate text-sm text-[var(--sportlink-text-soft)]">
+            {complete ? `Confirmed · ${email}` : `Waiting for confirmation · ${email}`}
+          </p>
+        </div>
+
+        <div className="text-[#66635d]">
+          {open ? <ChevronUp className="h-6 w-6" strokeWidth={2.2} /> : <ChevronDown className="h-6 w-6" strokeWidth={2.2} />}
+        </div>
+      </button>
+
+      {!complete && open ? (
+        <>
+          <div className="h-px bg-[#302f2b]" />
+
+          <div className="space-y-4 px-5 py-5 sm:px-8">
+            <p className="text-sm leading-6 text-[var(--sportlink-text-soft)]">
+              A confirmation email was sent to <span className="font-semibold text-[#f1efe8]">{email}</span>. Click the link inside to confirm your email address.
+            </p>
+
+            <div className="rounded-[1.35rem] bg-[#1f1e1d] px-5 py-5">
+              <ol className="space-y-4">
+                <InstructionItem index={1}>
+                  Check your inbox (and spam folder) for an email from SportLink
+                </InstructionItem>
+                <InstructionItem index={2}>Click "Confirm my email" in the email</InstructionItem>
+                <InstructionItem index={3}>
+                  Come back here — this step updates automatically
+                </InstructionItem>
+              </ol>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                className="rounded-xl border border-[#57544e] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#6a6660] hover:bg-[#31302d]"
+              >
+                Resend confirmation email
+              </button>
+              <button
+                type="button"
+                className="rounded-xl border border-[#57544e] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#6a6660] hover:bg-[#31302d]"
+              >
+                Wrong email address?
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function Avatar({ initials }: { initials: string }) {
@@ -185,7 +284,7 @@ function VerificationRow({ step, index }: { step: VerificationStep; index: numbe
             : "bg-[rgba(0,200,148,0.16)] text-[#d9f6ec]"
         }`}
       >
-        {step.complete ? <CheckIcon /> : index}
+        {step.complete ? <Check className="h-5 w-5" strokeWidth={2.25} /> : index}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -207,6 +306,17 @@ function VerificationRow({ step, index }: { step: VerificationStep; index: numbe
   );
 }
 
+function InstructionItem({ index, children }: { index: number; children: React.ReactNode }) {
+  return (
+    <li className="flex items-center gap-4 text-sm text-[#adaba5] sm:text-[15px]">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#313030] text-xs font-semibold text-[#8c8a84]">
+        {index}
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -215,12 +325,4 @@ function getInitials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
-      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 }
