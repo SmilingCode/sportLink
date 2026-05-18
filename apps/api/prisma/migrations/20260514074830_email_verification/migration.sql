@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+
 -- CreateEnum
 CREATE TYPE "Sport" AS ENUM ('soccer', 'basketball', 'volleyball', 'spikeball');
 
@@ -33,26 +35,20 @@ CREATE TABLE "User" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "emailVerifyToken" TEXT,
     "emailVerifyExpiry" TIMESTAMP(3),
-    "phoneOtp" TEXT,
     "phoneOtpExpiry" TIMESTAMP(3),
 
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Game" (
     "id" TEXT NOT NULL,
+    CREATE EXTENSION IF NOT EXISTS postgis;
     "title" TEXT NOT NULL,
-    "sport" "Sport" NOT NULL,
     "skillLevel" "SkillLevel" NOT NULL,
     "gender" "Gender" NOT NULL,
-    "dateTime" TIMESTAMP(3) NOT NULL,
     "recurring" "RecurringType" NOT NULL DEFAULT 'one_off',
     "lat" DOUBLE PRECISION NOT NULL,
-    "lng" DOUBLE PRECISION NOT NULL,
     "address" TEXT NOT NULL,
     "suburb" TEXT NOT NULL,
-    "minPlayers" INTEGER NOT NULL,
     "maxPlayers" INTEGER NOT NULL,
     "costPerPlayer" INTEGER NOT NULL DEFAULT 0,
     "equipmentNotes" TEXT,

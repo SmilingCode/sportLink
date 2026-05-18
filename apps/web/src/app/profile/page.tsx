@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronUp, Mail } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp } from "lucide-react";
 import type { UserDTO } from "@sportlink/types";
-import { getStoredSession } from "@/lib/auth";
+import { clearStoredSession, getStoredSession, setStoredSession } from "@/lib/auth";
+import { ApiError, authApi } from "@/lib/api";
 
 type VerificationStep = {
+  id: "email" | "phone" | "id" | "selfie";
+  kind: "email" | "standard";
   title: string;
   detail: string;
   complete: boolean;
@@ -17,7 +20,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<UserDTO | null>(null);
-  const [emailCardOpen, setEmailCardOpen] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({ email: true });
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const session = getStoredSession();
@@ -27,9 +33,72 @@ export default function ProfilePage() {
       return;
     }
 
+    const sessionToken = session.token;
+
     setUser(session.user);
+    setToken(sessionToken);
     setAuthChecked(true);
+
+    async function syncCurrentUser() {
+      try {
+        const freshUser = await authApi.me(sessionToken);
+        setUser(freshUser);
+        setStoredSession({ token: sessionToken, user: freshUser });
+      } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 401) {
+          clearStoredSession();
+          router.replace("/auth/login?next=%2Fprofile");
+        }
+      }
+    }
+
+    void syncCurrentUser();
   }, [router]);
+
+  const handleResendEmail = async () => {
+    setResendMessage(null);
+
+    if (!token) {
+      setResendMessage("You are not logged in. Please sign in again.");
+      return;
+    }
+
+    setIsResendingEmail(true);
+    try {
+      await authApi.resendVerification(token);
+      setResendMessage("Confirmation email sent again. Check your inbox and spam folder.");
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) {
+        clearStoredSession();
+        router.replace("/auth/login?next=%2Fprofile");
+        return;
+      }
+
+      if (
+        error instanceof ApiError &&
+        error.statusCode === 400 &&
+        error.message.includes("Email is already verified")
+      ) {
+        setUser((current) =>
+          current
+            ? {
+                ...current,
+                verificationStatus: "email_verified",
+              }
+            : current,
+        );
+        setExpandedSteps((current) => ({ ...current, email: false }));
+        setResendMessage("Email is already verified.");
+        return;
+      }
+
+      const message =
+        error instanceof Error ? error.message : "Could not resend confirmation email.";
+      setResendMessage(message);
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
 
   if (!authChecked) {
     return (
@@ -44,7 +113,7 @@ export default function ProfilePage() {
   }
 
   const verificationState = getVerificationState(user.verificationStatus);
-  const verificationSteps = buildVerificationSteps(verificationState);
+  const verificationSteps = buildVerificationSteps(verificationState, user.email);
   const joinedMonth = new Date(user.createdAt).toLocaleDateString("en-AU", {
     month: "long",
     year: "numeric",
@@ -87,14 +156,28 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-3">
-            <EmailVerificationCard
-              email={user.email}
-              complete={verificationState.emailVerified}
-              open={emailCardOpen}
-              onToggle={() => setEmailCardOpen((current) => !current)}
-            />
             {verificationSteps.map((step, index) => (
-              <VerificationRow key={step.title} step={step} index={index + 2} />
+              step.kind === "email" ? (
+                <EmailVerificationCard
+                  key={step.id}
+                  index={index + 1}
+                  email={step.detail}
+                  complete={step.complete}
+                  open={expandedSteps[step.id] ?? true}
+                  isResending={isResendingEmail}
+                  resendMessage={resendMessage}
+                  onResend={handleResendEmail}
+                  onBackToInstructions={() => setResendMessage(null)}
+                  onToggle={() =>
+                    setExpandedSteps((current) => ({
+                      ...current,
+                      [step.id]: !(current[step.id] ?? true),
+                    }))
+                  }
+                />
+              ) : (
+                <VerificationRow key={step.id} step={step} index={index + 1} />
+              )
             ))}
           </div>
         </section>
@@ -120,21 +203,37 @@ function getVerificationState(status: UserDTO["verificationStatus"]) {
   };
 }
 
-function buildVerificationSteps(state: ReturnType<typeof getVerificationState>): VerificationStep[] {
+function buildVerificationSteps(
+  state: ReturnType<typeof getVerificationState>,
+  email: string,
+): VerificationStep[] {
   return [
     {
+      id: "email",
+      kind: "email",
+      title: "Email verification",
+      detail: email,
+      complete: state.emailVerified,
+    },
+    {
+      id: "phone",
+      kind: "standard",
       title: "Phone number verification",
       detail: "+61 4•• ••• •••",
       complete: state.phoneVerified,
       actionLabel: state.phoneVerified ? undefined : "Start →",
     },
     {
+      id: "id",
+      kind: "standard",
       title: "Government ID verification",
       detail: "Upload a passport or driver's licence",
       complete: state.idVerified,
       actionLabel: state.idVerified ? undefined : "Start →",
     },
     {
+      id: "selfie",
+      kind: "standard",
       title: "Selfie verification",
       detail: "Take a selfie to verify your identity",
       complete: false,
@@ -159,90 +258,165 @@ function verificationSummary(status: UserDTO["verificationStatus"]) {
 }
 
 function EmailVerificationCard({
+  index,
   email,
   complete,
   open,
+  isResending,
+  resendMessage,
+  onResend,
+  onBackToInstructions,
   onToggle,
 }: {
+  index: number;
   email: string;
   complete: boolean;
   open: boolean;
+  isResending: boolean;
+  resendMessage: string | null;
+  onResend: () => void;
+  onBackToInstructions: () => void;
   onToggle: () => void;
 }) {
+  const headerClassName = `flex w-full items-center gap-4 text-left px-4 py-4 sm:px-5`;
+  const isResendSuccess =
+    resendMessage?.includes("Confirmation email sent again") ||
+    resendMessage?.includes("Email resent to");
+
   return (
     <div
-      className={`overflow-hidden rounded-[2rem] border ${
+      className={`overflow-hidden border ${
+        complete ? "rounded-2xl" : open ? "rounded-[2rem]" : "rounded-2xl"
+      } ${
         complete
-          ? "border-[rgba(0,200,148,0.28)] bg-[#2b2a28]"
-          : "border-[rgba(0,200,148,0.75)] bg-[#2b2a28]"
+          ? "border-[rgba(0,200,148,0.36)] bg-[#2a2a27]"
+          : `${open ? "border-[rgba(0,200,148,0.55)] bg-[#2b2a28]" : "border-[var(--sportlink-border)] bg-[#2a2a27]"}`
       }`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-4 px-5 py-5 text-left sm:px-7"
-        aria-expanded={open}
-      >
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-            complete
-              ? "bg-[rgba(0,200,148,0.18)] text-[var(--sportlink-green)]"
-              : "bg-[var(--sportlink-green)] text-[#f4fbf7]"
-          }`}
-        >
-          {complete ? <Check className="h-5 w-5" strokeWidth={2.25} /> : 1}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="text-base font-semibold tracking-[-0.02em] text-[#f1efe8]">
-            Email verification
+      {complete ? (
+        <div className={headerClassName}>
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+              !open
+                ? "bg-[rgba(0,200,148,0.18)] text-[var(--sportlink-green)]"
+                : "bg-[var(--sportlink-green)] text-[#f4fbf7]"
+            }`}
+          >
+            {index}
           </div>
-          <p className="truncate text-sm text-[var(--sportlink-text-soft)]">
-            {complete ? `Confirmed · ${email}` : `Waiting for confirmation · ${email}`}
-          </p>
-        </div>
 
-        <div className="text-[#66635d]">
-          {open ? <ChevronUp className="h-6 w-6" strokeWidth={2.2} /> : <ChevronDown className="h-6 w-6" strokeWidth={2.2} />}
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-semibold tracking-[-0.02em] text-[#f1efe8]">
+              Email verification
+            </div>
+            <p className="truncate text-sm text-[var(--sportlink-text-soft)]">
+              {complete ? `Confirmed · ${email}` : `Waiting for confirmation · ${email}`}
+            </p>
+          </div>
+
+          <div className="text-[#66635d]">
+            <Check className="h-5 w-5" strokeWidth={2.25} />
+          </div>
         </div>
-      </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onToggle}
+          className={headerClassName}
+          aria-expanded={open}
+        >
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+              !open
+                ? "bg-[rgba(0,200,148,0.18)]"
+                : "bg-[var(--sportlink-green)] text-[#f4fbf7]"
+            }`}
+          >
+            {index}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-semibold tracking-[-0.02em] text-[#f1efe8]">
+              Email verification
+            </div>
+            <p className="truncate text-sm text-[var(--sportlink-text-soft)]">
+              {complete ? `Confirmed · ${email}` : `Waiting for confirmation · ${email}`}
+            </p>
+          </div>
+
+          <div className="text-[#66635d]">
+            {open ? (
+              <ChevronUp className="h-6 w-6" strokeWidth={2.2} />
+            ) : (
+              <ChevronDown className="h-6 w-6" strokeWidth={2.2} />
+            )}
+          </div>
+        </button>
+      )}
 
       {!complete && open ? (
         <>
-          <div className="h-px bg-[#302f2b]" />
+          <div className="h-px bg-[#4d4a44]" />
 
-          <div className="space-y-4 px-5 py-5 sm:px-8">
-            <p className="text-sm leading-6 text-[var(--sportlink-text-soft)]">
-              A confirmation email was sent to <span className="font-semibold text-[#f1efe8]">{email}</span>. Click the link inside to confirm your email address.
-            </p>
+          {isResendSuccess ? (
+            <div className="space-y-5 px-5 py-5 sm:px-8">
+              <div className="flex items-center gap-3 rounded-xl border border-[rgba(0,200,148,0.8)] bg-[rgba(0,120,90,0.22)] px-4 py-4 text-[var(--sportlink-green)]">
+                <Check className="h-5 w-5" strokeWidth={2.25} />
+                <p className="text-sm font-medium sm:text-base">
+                  Email resent to <span className="font-semibold">{email}</span>. Check your inbox and spam folder.
+                </p>
+              </div>
 
-            <div className="rounded-[1.35rem] bg-[#1f1e1d] px-5 py-5">
-              <ol className="space-y-4">
-                <InstructionItem index={1}>
-                  Check your inbox (and spam folder) for an email from SportLink
-                </InstructionItem>
-                <InstructionItem index={2}>Click "Confirm my email" in the email</InstructionItem>
-                <InstructionItem index={3}>
-                  Come back here — this step updates automatically
-                </InstructionItem>
-              </ol>
+              <p className="text-sm leading-6 text-[var(--sportlink-text-soft)] sm:text-[16px]">
+                Still nothing after a minute? Check your spam folder, or try a different email
+                address.
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={onBackToInstructions}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#57544e] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#6a6660] hover:bg-[#31302d]"
+                >
+                  <ArrowLeft className="h-4 w-4" strokeWidth={2.3} />
+                  Back
+                </button>
+              </div>
             </div>
+          ) : (
+            <div className="space-y-4 px-5 py-5 sm:px-8">
+              <p className="text-sm leading-6 text-[var(--sportlink-text-soft)]">
+                A confirmation email was sent to <span className="font-semibold text-[#f1efe8]">{email}</span>. Click the link inside to confirm your email address.
+              </p>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                className="rounded-xl border border-[#57544e] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#6a6660] hover:bg-[#31302d]"
-              >
-                Resend confirmation email
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-[#57544e] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#6a6660] hover:bg-[#31302d]"
-              >
-                Wrong email address?
-              </button>
+              <div className="rounded-[1.35rem] bg-[#1f1e1d] px-5 py-5">
+                <ol className="space-y-4">
+                  <InstructionItem index={1}>
+                    Check your inbox (and spam folder) for an email from SportLink
+                  </InstructionItem>
+                  <InstructionItem index={2}>Click "Confirm my email" in the email</InstructionItem>
+                  <InstructionItem index={3}>
+                    Come back here — this step updates automatically
+                  </InstructionItem>
+                </ol>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={onResend}
+                  disabled={isResending}
+                  className="rounded-xl border border-[#57544e] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#6a6660] hover:bg-[#31302d]"
+                >
+                  {isResending ? "Sending..." : "Resend confirmation email"}
+                </button>
+              </div>
+
+              {resendMessage ? (
+                <p className="text-sm text-[var(--sportlink-text-soft)]">{resendMessage}</p>
+              ) : null}
             </div>
-          </div>
+          )}
         </>
       ) : null}
     </div>

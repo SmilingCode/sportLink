@@ -95,14 +95,12 @@ async function sendVerificationEmail(to: string, token: string, app: FastifyInst
   verifyUrl.searchParams.set("token", token);
 
   if (!resend) {
-    app.log.warn(
-      { to, verifyUrl: verifyUrl.toString() },
-      "RESEND_API_KEY is missing; skipping verification email send",
-    );
-    return;
+    const message = "RESEND_API_KEY is missing";
+    app.log.error({ to, verifyUrl: verifyUrl.toString() }, message);
+    throw new Error(message);
   }
 
-  await resend.emails.send({
+  const result = (await resend.emails.send({
     from: env.RESEND_FROM_EMAIL,
     to,
     subject: "Verify your SportLink email",
@@ -111,7 +109,18 @@ async function sendVerificationEmail(to: string, token: string, app: FastifyInst
       <p>Please verify your email by clicking the link below. This link expires in 24 hours.</p>
       <p><a href="${verifyUrl.toString()}">Verify email</a></p>
     `,
-  });
+  })) as {
+    data?: { id?: string } | null;
+    error?: { message?: string } | null;
+  };
+
+  if (result.error) {
+    throw new Error(result.error.message ?? "Resend rejected the email");
+  }
+
+  if (!result.data?.id) {
+    throw new Error("Resend did not return a message id");
+  }
 }
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
@@ -210,16 +219,23 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const tokenHash = hashToken(query.data.token);
     const now = new Date();
 
-    const user = await db.user.findFirst({
-      where: {
-        emailVerifyToken: tokenHash,
-        emailVerifyExpiry: {
-          gt: now,
-        },
-      },
-    });
+    const user = await db.user.findFirst({ where: { emailVerifyToken: tokenHash } });
 
     if (!user) {
+      return reply.badRequest("Invalid or expired verification token");
+    }
+
+    const isEmailAlreadyVerified =
+      user.verificationStatus === "email_verified" ||
+      user.verificationStatus === "phone_verified" ||
+      user.verificationStatus === "id_verified" ||
+      user.verificationStatus === "fully_verified";
+
+    if (isEmailAlreadyVerified) {
+      return { verified: true, alreadyVerified: true };
+    }
+
+    if (!user.emailVerifyExpiry || user.emailVerifyExpiry <= now) {
       return reply.badRequest("Invalid or expired verification token");
     }
 
@@ -230,11 +246,53 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       where: { id: user.id },
       data: {
         verificationStatus,
-        emailVerifyToken: null,
-        emailVerifyExpiry: null,
+        emailVerifyExpiry: now,
       },
     });
 
     return { verified: true };
+  });
+
+  // POST /auth/resend-verification — send a fresh verification email for current user
+  app.post("/resend-verification", { preHandler: authenticate }, async (request, reply) => {
+    const payload = request.user as { sub: string };
+
+    const user = await db.user.findUnique({ where: { id: payload.sub } });
+    if (!user) {
+      return reply.unauthorized();
+    }
+
+    const isEmailAlreadyVerified =
+      user.verificationStatus === "email_verified" ||
+      user.verificationStatus === "phone_verified" ||
+      user.verificationStatus === "id_verified" ||
+      user.verificationStatus === "fully_verified";
+
+    if (isEmailAlreadyVerified) {
+      return reply.badRequest("Email is already verified");
+    }
+
+    const rawEmailVerifyToken = generateEmailVerificationToken();
+    const emailVerifyToken = hashToken(rawEmailVerifyToken);
+    const emailVerifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerifyToken,
+        emailVerifyExpiry,
+      },
+    });
+
+    try {
+      await sendVerificationEmail(user.email, rawEmailVerifyToken, app);
+    } catch (error) {
+      app.log.error({ err: error, userId: user.id }, "Failed to resend verification email");
+      const message =
+        error instanceof Error ? error.message : "Could not send verification email";
+      return reply.badGateway(`Failed to send verification email: ${message}`);
+    }
+
+    return { sent: true };
   });
 };
