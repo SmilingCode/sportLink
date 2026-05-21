@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { UserDTO } from "@sportlink/types";
+import { authApi } from "@/lib/api";
 import { clearStoredSession, getStoredSession } from "@/lib/auth";
 
 const navItems = [
@@ -43,6 +44,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     clearStoredSession();
+    void authApi.logout().catch(() => null);
     router.push("/");
   };
 
@@ -89,7 +91,8 @@ export default function Navbar() {
 
         <nav className="flex items-center gap-8 px-5 sm:px-6">
           {navItems.map((item) => {
-            const active = item.href === "/" ? pathname === "/" || isGameDetailPage : pathname === item.href;
+            const active =
+              item.href === "/" ? pathname === "/" || isGameDetailPage : pathname === item.href;
 
             return (
               <Link

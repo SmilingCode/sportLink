@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Shield, ShieldCheck } from "lucide-react";
 import { gamesApi } from "@/lib/api";
-import { getStoredToken } from "@/lib/auth";
+import { getStoredSession } from "@/lib/auth";
 import MapPicker from "@/components/MapPicker";
 
 const DRAFT_KEY = "sportlink.create-game.draft";
@@ -72,21 +72,17 @@ export default function CreateGamePage() {
   const router = useRouter();
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const [authChecked, setAuthChecked] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [form, setForm] = useState<CreateFormState>(DEFAULT_FORM);
 
   useEffect(() => {
-    const currentToken = getStoredToken();
-
-    if (!currentToken) {
+    const session = getStoredSession();
+    if (!session) {
       router.replace("/auth/login?next=%2Fgames%2Fcreate");
       return;
     }
-
-    setToken(currentToken);
 
     const rawDraft = window.localStorage.getItem(DRAFT_KEY);
     if (rawDraft) {
@@ -134,7 +130,7 @@ export default function CreateGamePage() {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!token) {
+    if (!getStoredSession()) {
       router.replace("/auth/login?next=%2Fgames%2Fcreate");
       return;
     }
@@ -185,7 +181,7 @@ export default function CreateGamePage() {
     }
 
     try {
-      const created = await gamesApi.create(payload, token);
+      const created = await gamesApi.create(payload);
       window.localStorage.removeItem(DRAFT_KEY);
       setSuccess("Game created successfully.");
       router.push(`/games/${created.id}`);

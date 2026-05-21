@@ -30,7 +30,7 @@ export default function SignupPage() {
 
     try {
       const res = await authApi.signup(name.trim(), email.trim(), password);
-      setStoredSession({ token: res.accessToken, user: res.user });
+      setStoredSession({ user: res.user });
       router.push(nextPath);
       router.refresh();
     } catch (err) {

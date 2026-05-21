@@ -9,7 +9,7 @@ import HostAndAbout from "@/components/HostAndAbout";
 import PlayersList from "@/components/PlayersList";
 import LocationCard from "@/components/LocationCard";
 import { gamesApi } from "@/lib/api";
-import { getStoredToken } from "@/lib/auth";
+import { getStoredSession } from "@/lib/auth";
 
 // Mock game data for development
 const MOCK_GAME: GameDTO = {
@@ -100,7 +100,7 @@ export default function GameDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
-  const token = getStoredToken();
+  const session = getStoredSession();
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -112,9 +112,7 @@ export default function GameDetailPage({ params }: PageProps) {
         const result = await gamesApi.get(params.id);
         setGame(result);
         // In a real app, we'd also fetch the players list
-        setPlayers(
-          MOCK_PLAYERS.slice(0, Math.min(result.currentPlayers, MOCK_PLAYERS.length)),
-        );
+        setPlayers(MOCK_PLAYERS.slice(0, Math.min(result.currentPlayers, MOCK_PLAYERS.length)));
       } catch {
         // Fallback to mock data
         setGame(MOCK_GAME);
@@ -128,7 +126,7 @@ export default function GameDetailPage({ params }: PageProps) {
   }, [params.id]);
 
   const handleJoinGame = async () => {
-    if (!token) {
+    if (!session) {
       router.push(`/auth/login?next=%2Fgames%2F${params.id}`);
       return;
     }
@@ -158,10 +156,7 @@ export default function GameDetailPage({ params }: PageProps) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#1c1b19]">
         <div className="text-[#ff8f87] mb-4">Failed to load game</div>
-        <Link
-          href="/games"
-          className="text-[var(--sportlink-green)] hover:underline"
-        >
+        <Link href="/games" className="text-[var(--sportlink-green)] hover:underline">
           Back to games
         </Link>
       </div>

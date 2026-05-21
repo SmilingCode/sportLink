@@ -22,6 +22,17 @@ const verifyEmailQuerySchema = z.object({
 });
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+const AUTH_COOKIE_NAME = "sportlink_access_token";
+
+function authCookie(token: string) {
+  const secure = env.NODE_ENV === "production" ? "Secure; " : "";
+  return `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; ${secure}SameSite=Lax; Max-Age=604800`;
+}
+
+function clearAuthCookie() {
+  const secure = env.NODE_ENV === "production" ? "Secure; " : "";
+  return `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; ${secure}SameSite=Lax; Max-Age=0`;
+}
 
 function generateEmailVerificationToken() {
   return randomBytes(24).toString("hex");
@@ -92,6 +103,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
+    reply.header("Set-Cookie", authCookie(token));
     return reply.code(201).send({ accessToken: token, user });
   });
 
@@ -112,6 +124,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
+    reply.header("Set-Cookie", authCookie(token));
     return { accessToken: token, user };
   });
 
@@ -120,6 +133,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const payload = request.user as { sub: string };
     const user = await db.user.findUniqueOrThrow({ where: { id: payload.sub } });
     return user;
+  });
+
+  app.post("/logout", async (_request, reply) => {
+    reply.header("Set-Cookie", clearAuthCookie());
+    return { loggedOut: true };
   });
 
   // GET /auth/verify-email?token=...

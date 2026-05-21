@@ -17,7 +17,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     ...options.headers,
   };
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers, credentials: "include" });
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
@@ -41,13 +41,13 @@ export const gamesApi = {
 
   get: (id: string) => request<GameDTO>(`/games/${id}`),
 
-  create: (body: CreateGameBody, token: string) =>
+  create: (body: CreateGameBody, token?: string) =>
     request<GameDTO>("/games", { method: "POST", body: JSON.stringify(body) }, token),
 
-  join: (id: string, token: string) =>
+  join: (id: string, token?: string) =>
     request<{ joined: boolean }>(`/games/${id}/join`, { method: "POST" }, token),
 
-  leave: (id: string, token: string) =>
+  leave: (id: string, token?: string) =>
     request<{ left: boolean }>(`/games/${id}/leave`, { method: "DELETE" }, token),
 };
 
@@ -71,12 +71,14 @@ export const authApi = {
       `/auth/verify-email?${new URLSearchParams({ token }).toString()}`,
     ),
 
-  me: (token: string) => request<UserDTO>("/auth/me", {}, token),
+  me: (token?: string) => request<UserDTO>("/auth/me", {}, token),
+
+  logout: () => request<{ loggedOut: boolean }>("/auth/logout", { method: "POST" }),
 };
 
 // ─── Verify ───────────────────────────────────────────────────────────────────
 
 export const verifyApi = {
-  createSession: (token: string) =>
+  createSession: (token?: string) =>
     request<{ clientSecret: string }>("/verify/session", { method: "POST" }, token),
 };

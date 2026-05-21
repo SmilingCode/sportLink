@@ -1,10 +1,10 @@
 import type { UserDTO } from "@sportlink/types";
 
-const AUTH_TOKEN_KEY = "sportlink.auth.token";
 const AUTH_USER_KEY = "sportlink.auth.user";
+let inMemoryToken: string | null = null;
 
 export interface StoredSession {
-  token: string;
+  token?: string;
   user: UserDTO;
 }
 
@@ -17,7 +17,7 @@ export function setStoredSession(session: StoredSession) {
     return;
   }
 
-  window.localStorage.setItem(AUTH_TOKEN_KEY, session.token);
+  inMemoryToken = session.token ?? null;
   window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user));
   window.dispatchEvent(new Event("sportlink-auth-changed"));
 }
@@ -27,7 +27,7 @@ export function clearStoredSession() {
     return;
   }
 
-  window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  inMemoryToken = null;
   window.localStorage.removeItem(AUTH_USER_KEY);
   window.dispatchEvent(new Event("sportlink-auth-changed"));
 }
@@ -37,16 +37,15 @@ export function getStoredSession(): StoredSession | null {
     return null;
   }
 
-  const token = window.localStorage.getItem(AUTH_TOKEN_KEY);
   const rawUser = window.localStorage.getItem(AUTH_USER_KEY);
 
-  if (!token || !rawUser) {
+  if (!rawUser) {
     return null;
   }
 
   try {
     const user = JSON.parse(rawUser) as UserDTO;
-    return { token, user };
+    return { token: inMemoryToken ?? undefined, user };
   } catch {
     clearStoredSession();
     return null;
@@ -54,5 +53,5 @@ export function getStoredSession(): StoredSession | null {
 }
 
 export function getStoredToken(): string | null {
-  return getStoredSession()?.token ?? null;
+  return inMemoryToken;
 }
