@@ -33,15 +33,16 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     }
 
     const tokenFromCookie = getCookieToken(request.headers.cookie);
-    if (tokenFromCookie) {
-      if (authenticateWithCookieToken(request, tokenFromCookie)) {
-        return;
-      }
-      reply.unauthorized("Invalid token");
+    if (!tokenFromCookie) {
+      reply.unauthorized("Missing authentication credentials");
       return;
     }
 
-    reply.unauthorized("Missing authentication credentials");
+    if (authenticateWithCookieToken(request, tokenFromCookie)) {
+      return;
+    }
+
+    reply.unauthorized("Invalid token");
   } catch {
     reply.unauthorized("Invalid token");
   }

@@ -135,7 +135,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     return user;
   });
 
-  app.post("/logout", async (_request, reply) => {
+  app.post("/logout", { preHandler: authenticate }, async (_request, reply) => {
     reply.header("Set-Cookie", clearAuthCookie());
     return { loggedOut: true };
   });
