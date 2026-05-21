@@ -42,11 +42,13 @@ export default function Navbar() {
     };
   }, []);
 
-  const handleLogout = () => {
-    clearStoredSession();
-    void authApi.logout().catch((error) => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
       console.error("Failed to clear auth cookie during logout", error);
-    });
+    }
+    clearStoredSession();
     router.push("/");
   };
 

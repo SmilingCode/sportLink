@@ -33,8 +33,8 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       return;
     }
 
-    reply.unauthorized("Invalid or missing token");
+    reply.unauthorized("Missing token");
   } catch {
-    reply.unauthorized("Invalid or missing token");
+    reply.unauthorized("Invalid token");
   }
 }
