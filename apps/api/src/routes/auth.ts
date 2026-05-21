@@ -23,6 +23,53 @@ const verifyEmailQuerySchema = z.object({
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 const AUTH_COOKIE_NAME = "sportlink_access_token";
+const authUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  avatarUrl: true,
+  lat: true,
+  lng: true,
+  suburb: true,
+  verificationStatus: true,
+  createdAt: true,
+  _count: { select: { hostedGames: true, memberships: true } },
+} as const;
+
+function toAuthUserDto(user: {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  lat: number | null;
+  lng: number | null;
+  suburb: string | null;
+  verificationStatus: string;
+  createdAt: Date;
+  _count?: {
+    hostedGames: number;
+    memberships: number;
+  };
+}) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatarUrl: user.avatarUrl ?? undefined,
+    location:
+      user.lat !== null && user.lng !== null
+        ? {
+            lat: user.lat,
+            lng: user.lng,
+            suburb: user.suburb ?? undefined,
+          }
+        : undefined,
+    verificationStatus: user.verificationStatus,
+    gamesJoined: user._count?.memberships ?? 0,
+    gamesHosted: user._count?.hostedGames ?? 0,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
 
 function authCookie(token: string) {
   const secure = env.NODE_ENV === "production" ? "Secure; " : "";
@@ -103,8 +150,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
+    const sanitizedUser = toAuthUserDto(user);
+
     reply.header("Set-Cookie", authCookie(token));
-    return reply.code(201).send({ accessToken: token, user });
+    return reply.code(201).send({ accessToken: token, user: sanitizedUser });
   });
 
   // POST /auth/login
@@ -112,7 +161,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const body = loginSchema.safeParse(request.body);
     if (!body.success) return reply.badRequest(body.error.message);
 
-    const user = await db.user.findUnique({ where: { email: body.data.email } });
+    const user = await db.user.findUnique({
+      where: { email: body.data.email },
+      select: {
+        ...authUserSelect,
+        passwordHash: true,
+      },
+    });
     // In production: bcrypt.compare(body.data.password, user.passwordHash)
     if (!user || user.passwordHash !== body.data.password) {
       return reply.unauthorized("Invalid email or password");
@@ -124,15 +179,20 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
+    const sanitizedUser = toAuthUserDto(user);
+
     reply.header("Set-Cookie", authCookie(token));
-    return { accessToken: token, user };
+    return { accessToken: token, user: sanitizedUser };
   });
 
   // GET /auth/me — return current user from JWT
   app.get("/me", { preHandler: authenticate }, async (request) => {
     const payload = request.user as { sub: string };
-    const user = await db.user.findUniqueOrThrow({ where: { id: payload.sub } });
-    return user;
+    const user = await db.user.findUniqueOrThrow({
+      where: { id: payload.sub },
+      select: authUserSelect,
+    });
+    return toAuthUserDto(user);
   });
 
   app.post("/logout", { preHandler: authenticate }, async (_request, reply) => {
