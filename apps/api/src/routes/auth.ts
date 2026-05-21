@@ -35,8 +35,7 @@ const authUserSelect = {
   createdAt: true,
   _count: { select: { hostedGames: true, memberships: true } },
 } as const;
-
-function toAuthUserDto(user: {
+type AuthUserDtoSource = {
   id: string;
   name: string;
   email: string;
@@ -46,11 +45,13 @@ function toAuthUserDto(user: {
   suburb: string | null;
   verificationStatus: string;
   createdAt: Date;
-  _count?: {
+  _count: {
     hostedGames: number;
     memberships: number;
   };
-}) {
+};
+
+function toAuthUserDto(user: AuthUserDtoSource) {
   return {
     id: user.id,
     name: user.name,
@@ -128,6 +129,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     // In production: hash password with bcrypt
     const user = await db.user.create({
+      select: authUserSelect,
       data: {
         name: body.data.name,
         email: body.data.email,
@@ -150,12 +152,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
-    const sanitizedUser = toAuthUserDto(
-      await db.user.findUniqueOrThrow({
-        where: { id: user.id },
-        select: authUserSelect,
-      }),
-    );
+    const sanitizedUser = toAuthUserDto(user);
 
     reply.header("Set-Cookie", authCookie(token));
     return reply.code(201).send({ user: sanitizedUser });
