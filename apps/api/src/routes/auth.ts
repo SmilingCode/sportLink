@@ -150,7 +150,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
-    const sanitizedUser = toAuthUserDto(user);
+    const sanitizedUser = toAuthUserDto(
+      await db.user.findUniqueOrThrow({
+        where: { id: user.id },
+        select: authUserSelect,
+      }),
+    );
 
     reply.header("Set-Cookie", authCookie(token));
     return reply.code(201).send({ user: sanitizedUser });
