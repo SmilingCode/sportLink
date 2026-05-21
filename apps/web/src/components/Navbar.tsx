@@ -46,7 +46,10 @@ export default function Navbar() {
     try {
       await authApi.logout();
     } catch (error) {
-      console.error("Failed to clear auth cookie during logout", error);
+      console.error(
+        "Failed to clear auth cookie on server during logout. Local session cleared.",
+        error,
+      );
     }
     clearStoredSession();
     router.push("/");

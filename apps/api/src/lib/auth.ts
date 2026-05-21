@@ -16,8 +16,13 @@ function getCookieToken(cookieHeader: string | undefined) {
 }
 
 function authenticateWithCookieToken(request: FastifyRequest, token: string) {
-  const payload = request.server.jwt.verify(token);
-  (request as FastifyRequest & { user: typeof payload }).user = payload;
+  try {
+    const payload = request.server.jwt.verify(token);
+    (request as FastifyRequest & { user: typeof payload }).user = payload;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
@@ -29,11 +34,14 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
 
     const tokenFromCookie = getCookieToken(request.headers.cookie);
     if (tokenFromCookie) {
-      authenticateWithCookieToken(request, tokenFromCookie);
+      if (authenticateWithCookieToken(request, tokenFromCookie)) {
+        return;
+      }
+      reply.unauthorized("Invalid token");
       return;
     }
 
-    reply.unauthorized("Authentication required");
+    reply.unauthorized("Missing authentication credentials");
   } catch {
     reply.unauthorized("Invalid token");
   }
