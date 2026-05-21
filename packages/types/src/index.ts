@@ -148,6 +148,5 @@ export interface AuthTokenPayload {
 }
 
 export interface LoginResponse {
-  accessToken: string;
   user: UserDTO;
 }

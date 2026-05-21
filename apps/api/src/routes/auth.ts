@@ -153,7 +153,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const sanitizedUser = toAuthUserDto(user);
 
     reply.header("Set-Cookie", authCookie(token));
-    return reply.code(201).send({ accessToken: token, user: sanitizedUser });
+    return reply.code(201).send({ user: sanitizedUser });
   });
 
   // POST /auth/login
@@ -182,7 +182,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const sanitizedUser = toAuthUserDto(user);
 
     reply.header("Set-Cookie", authCookie(token));
-    return { accessToken: token, user: sanitizedUser };
+    return { user: sanitizedUser };
   });
 
   // GET /auth/me — return current user from JWT
