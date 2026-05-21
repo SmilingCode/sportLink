@@ -26,12 +26,12 @@ const AUTH_COOKIE_NAME = "sportlink_access_token";
 
 function authCookie(token: string) {
   const secure = env.NODE_ENV === "production" ? "Secure; " : "";
-  return `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; ${secure}SameSite=Lax; Max-Age=604800`;
+  return `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; ${secure}SameSite=Lax`;
 }
 
 function clearAuthCookie() {
   const secure = env.NODE_ENV === "production" ? "Secure; " : "";
-  return `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; ${secure}SameSite=Lax; Max-Age=0`;
+  return `${AUTH_COOKIE_NAME}=; Path=/; HttpOnly; ${secure}SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
 function generateEmailVerificationToken() {

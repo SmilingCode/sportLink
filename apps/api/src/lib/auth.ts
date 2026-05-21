@@ -17,12 +17,23 @@ function getCookieToken(cookieHeader: string | undefined) {
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const tokenFromCookie = getCookieToken(request.headers.cookie);
-    if (tokenFromCookie && !request.headers.authorization) {
-      request.headers.authorization = `Bearer ${tokenFromCookie}`;
+    if (request.headers.authorization) {
+      await request.jwtVerify();
+      return;
     }
 
-    await request.jwtVerify();
+    const tokenFromCookie = getCookieToken(request.headers.cookie);
+    if (tokenFromCookie) {
+      const payload = request.server.jwt.verify(tokenFromCookie);
+      (
+        request as FastifyRequest & {
+          user: typeof payload;
+        }
+      ).user = payload;
+      return;
+    }
+
+    reply.unauthorized("Invalid or missing token");
   } catch {
     reply.unauthorized("Invalid or missing token");
   }

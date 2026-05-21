@@ -44,7 +44,9 @@ export default function Navbar() {
 
   const handleLogout = () => {
     clearStoredSession();
-    void authApi.logout().catch(() => null);
+    void authApi.logout().catch((error) => {
+      console.error("Failed to clear auth cookie during logout", error);
+    });
     router.push("/");
   };
 
