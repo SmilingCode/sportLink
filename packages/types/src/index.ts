@@ -62,7 +62,7 @@ export interface GameDTO {
   minPlayers: number;
   maxPlayers: number;
   currentPlayers: number;
-  costPerPlayer: number; // 0 = free, in AUD cents
+  costPerPlayer: number; // 0 = free, in AUD dollars
   equipmentNotes?: string;
   description?: string;
   status: GameStatus;
@@ -108,6 +108,7 @@ export interface CreateGameBody {
   costPerPlayer: number;
   equipmentNotes?: string;
   description?: string;
+  verifiedPlayersOnly?: boolean;
 }
 
 export interface ListGamesQuery {

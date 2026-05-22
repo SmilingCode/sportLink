@@ -156,7 +156,10 @@ export default function GameDetailPage({ params }: PageProps) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#1c1b19]">
         <div className="text-[#ff8f87] mb-4">Failed to load game</div>
-        <Link href="/games" className="text-[var(--sportlink-green)] hover:underline">
+        <Link
+          href="/"
+          className="text-[var(--sportlink-green)] hover:underline"
+        >
           Back to games
         </Link>
       </div>

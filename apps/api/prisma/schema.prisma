@@ -95,10 +95,11 @@ model Game {
   suburb         String
   minPlayers     Int
   maxPlayers     Int
-  costPerPlayer  Int           @default(0) // AUD cents
+  costPerPlayer  Int           @default(0) // AUD dollors
   equipmentNotes String?
   description    String?
   status         GameStatus    @default(open)
+  verifiedPlayersOnly Boolean @default(false)
   hostId         String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

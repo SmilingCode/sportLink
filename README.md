@@ -136,6 +136,7 @@ Set env vars in Railway dashboard. Add a PostgreSQL + Redis service.
   Add CSRF protection strategy and test login/create-game/logout flow.
 
 - [] Save draft with "draft" Game status
+    ```
     enum GameStatus {
         draft      // ← add this
         open
@@ -143,5 +144,5 @@ Set env vars in Railway dashboard. Add a PostgreSQL + Redis service.
         cancelled
         completed
     }
-
+    ```
 - [] Add email verification

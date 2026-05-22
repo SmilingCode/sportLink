@@ -1,6 +1,5 @@
 "use client";
 
-import "mapbox-gl/dist/mapbox-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Suggestion {
@@ -33,7 +32,7 @@ export default function MapPicker({ token, onPick, initialAddress }: MapPickerPr
   const [isSearching, setIsSearching] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [confirmed, setConfirmed] = useState<PickedLocation | null>(
-    initialAddress ? null : null
+    {lat: -33.8931, lng: 151.2016, address: "Sydney Park Rd, Alexandria NSW"}
   );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -1,7 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import type { Prisma } from "@prisma/client";
 import { createHash, randomBytes } from "node:crypto";
 import { Resend } from "resend";
 import { z } from "zod";
+import type { UserDTO } from "@sportlink/types";
 import { db } from "../lib/db.js";
 import { authenticate } from "../lib/auth.js";
 import { env } from "../lib/env.js";
@@ -90,6 +92,59 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+const authUserBaseSelect = {
+  id: true,
+  name: true,
+  email: true,
+  avatarUrl: true,
+  lat: true,
+  lng: true,
+  suburb: true,
+  verificationStatus: true,
+  createdAt: true,
+} satisfies Prisma.UserSelect;
+
+const authUserWithCountsSelect = {
+  ...authUserBaseSelect,
+  _count: {
+    select: {
+      memberships: true,
+      hostedGames: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+const authUserForLoginSelect = {
+  ...authUserWithCountsSelect,
+  passwordHash: true,
+} satisfies Prisma.UserSelect;
+
+type AuthUserBaseRecord = Prisma.UserGetPayload<{ select: typeof authUserBaseSelect }>;
+type AuthUserWithCountsRecord = Prisma.UserGetPayload<{
+  select: typeof authUserWithCountsSelect;
+}>;
+
+function toUserDTO(user: AuthUserBaseRecord | AuthUserWithCountsRecord): UserDTO {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatarUrl: user.avatarUrl ?? undefined,
+    location:
+      user.lat !== null && user.lng !== null
+        ? {
+            lat: user.lat,
+            lng: user.lng,
+            suburb: user.suburb ?? undefined,
+          }
+        : undefined,
+    verificationStatus: user.verificationStatus,
+    gamesJoined: "_count" in user ? user._count.memberships : 0,
+    gamesHosted: "_count" in user ? user._count.hostedGames : 0,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+
 async function sendVerificationEmail(to: string, token: string, app: FastifyInstance) {
   const verifyUrl = new URL("/verify/email", env.FRONTEND_URL);
   verifyUrl.searchParams.set("token", token);
@@ -147,6 +202,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         emailVerifyToken,
         emailVerifyExpiry,
       },
+      select: authUserBaseSelect,
     });
 
     try {
@@ -161,10 +217,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
-    const sanitizedUser = toAuthUserDto(user);
-
-    reply.header("Set-Cookie", authCookie(token));
-    return reply.code(201).send({ user: sanitizedUser });
+    return reply.code(201).send({ accessToken: token, user: toUserDTO(user) });
   });
 
   // POST /auth/login
@@ -174,10 +227,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const user = await db.user.findUnique({
       where: { email: body.data.email },
-      select: {
-        ...authUserSelect,
-        passwordHash: true,
-      },
+      select: authUserForLoginSelect,
     });
     // In production: bcrypt.compare(body.data.password, user.passwordHash)
     if (!user || user.passwordHash !== body.data.password) {
@@ -190,10 +240,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
-    const sanitizedUser = toAuthUserDto(user);
-
-    reply.header("Set-Cookie", authCookie(token));
-    return { user: sanitizedUser };
+    return { accessToken: token, user: toUserDTO(user) };
   });
 
   // GET /auth/me — return current user from JWT
@@ -201,14 +248,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const payload = request.user as { sub: string };
     const user = await db.user.findUniqueOrThrow({
       where: { id: payload.sub },
-      select: authUserSelect,
+      select: authUserWithCountsSelect,
     });
-    return toAuthUserDto(user);
-  });
-
-  app.post("/logout", { preHandler: authenticate }, async (_request, reply) => {
-    reply.header("Set-Cookie", clearAuthCookie());
-    return { loggedOut: true };
+    return toUserDTO(user);
   });
 
   // GET /auth/verify-email?token=...

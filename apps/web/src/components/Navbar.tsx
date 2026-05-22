@@ -7,12 +7,6 @@ import type { UserDTO } from "@sportlink/types";
 import { authApi } from "@/lib/api";
 import { clearStoredSession, getStoredSession } from "@/lib/auth";
 
-const navItems = [
-  { href: "/", label: "Browse games" },
-  { href: "/games/create", label: "Create game" },
-  { href: "/profile", label: "My profile" },
-];
-
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
