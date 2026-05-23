@@ -25,54 +25,6 @@ const verifyEmailQuerySchema = z.object({
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 const AUTH_COOKIE_NAME = "sportlink_access_token";
-const authUserSelect = {
-  id: true,
-  name: true,
-  email: true,
-  avatarUrl: true,
-  lat: true,
-  lng: true,
-  suburb: true,
-  verificationStatus: true,
-  createdAt: true,
-  _count: { select: { hostedGames: true, memberships: true } },
-} as const;
-type AuthUserDtoSource = {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  lat: number | null;
-  lng: number | null;
-  suburb: string | null;
-  verificationStatus: string;
-  createdAt: Date;
-  _count: {
-    hostedGames: number;
-    memberships: number;
-  };
-};
-
-function toAuthUserDto(user: AuthUserDtoSource) {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    avatarUrl: user.avatarUrl ?? undefined,
-    location:
-      user.lat !== null && user.lng !== null
-        ? {
-            lat: user.lat,
-            lng: user.lng,
-            suburb: user.suburb ?? undefined,
-          }
-        : undefined,
-    verificationStatus: user.verificationStatus,
-    gamesJoined: user._count?.memberships ?? 0,
-    gamesHosted: user._count?.hostedGames ?? 0,
-    createdAt: user.createdAt.toISOString(),
-  };
-}
 
 function authCookie(token: string) {
   const secure = env.NODE_ENV === "production" ? "Secure; " : "";
@@ -193,7 +145,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     // In production: hash password with bcrypt
     const user = await db.user.create({
-      select: authUserSelect,
       data: {
         name: body.data.name,
         email: body.data.email,
@@ -217,7 +168,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
-    return reply.code(201).send({ accessToken: token, user: toUserDTO(user) });
+    reply.header("Set-Cookie", authCookie(token));
+    return reply.code(201).send({ user: toUserDTO(user) });
   });
 
   // POST /auth/login
@@ -240,7 +192,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       verificationStatus: user.verificationStatus,
     });
 
-    return { accessToken: token, user: toUserDTO(user) };
+    reply.header("Set-Cookie", authCookie(token));
+    return reply.send({ user: toUserDTO(user) });
+  });
+
+  // POST /auth/logout — clear auth cookie
+  app.post("/logout", async (_request, reply) => {
+    reply.header("Set-Cookie", clearAuthCookie());
+    return { loggedOut: true };
   });
 
   // GET /auth/me — return current user from JWT

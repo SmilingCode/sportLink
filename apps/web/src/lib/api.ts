@@ -86,11 +86,11 @@ export const authApi = {
       `/auth/verify-email?${new URLSearchParams({ token }).toString()}`,
     ),
 
-  me: (token?: string) => request<UserDTO>("/auth/me", {}, token),
+  me: () => request<UserDTO>("/auth/me"),
 
   logout: () => request<{ loggedOut: boolean }>("/auth/logout", { method: "POST" }),
-  resendVerification: (token: string) =>
-    request<{ sent: boolean }>("/auth/resend-verification", { method: "POST" }, token),
+  resendVerification: () =>
+    request<{ sent: boolean }>("/auth/resend-verification", { method: "POST" }),
 };
 
 // ─── Verify ───────────────────────────────────────────────────────────────────
