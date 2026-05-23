@@ -47,7 +47,8 @@ npm install
 ```bash
 # Backend
 cp apps/api/.env.example apps/api/.env
-# Fill in DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+# Fill in DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+# and Twilio Verify vars (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID)
 
 # Frontend
 cp apps/web/.env.example apps/web/.env.local
@@ -91,6 +92,8 @@ npm run dev
 | DELETE | /games/:id/leave | JWT            | Leave game                 |
 | PATCH  | /users/me        | JWT            | Update profile             |
 | POST   | /verify/session  | JWT            | Start Stripe Identity      |
+| POST   | /verify/phone/send  | JWT         | Send SMS verification code |
+| POST   | /verify/phone/check | JWT         | Check SMS verification code |
 | POST   | /verify/webhook  | Stripe sig     | Verification result        |
 
 ## Stripe Identity setup

@@ -98,4 +98,22 @@ export const authApi = {
 export const verifyApi = {
   createSession: (token?: string) =>
     request<{ clientSecret: string }>("/verify/session", { method: "POST" }, token),
+  sendPhoneCode: (phone: string, token?: string) =>
+    request<{ sent: boolean; maskedPhone?: string }>(
+      "/verify/phone/send",
+      {
+        method: "POST",
+        body: JSON.stringify({ phone }),
+      },
+      token,
+    ),
+  checkPhoneCode: (phone: string, code: string, token?: string) =>
+    request<{ verified: boolean }>(
+      "/verify/phone/check",
+      {
+        method: "POST",
+        body: JSON.stringify({ phone, code }),
+      },
+      token,
+    ),
 };

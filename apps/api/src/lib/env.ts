@@ -21,6 +21,9 @@ const envSchema = z.object({
   RESEND_FROM_EMAIL: resendFromEmailSchema,
   STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
   STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
+  TWILIO_ACCOUNT_SID: z.string().startsWith("AC").optional(),
+  TWILIO_AUTH_TOKEN: z.string().min(8).optional(),
+  TWILIO_VERIFY_SERVICE_SID: z.string().startsWith("VA").optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
