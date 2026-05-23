@@ -1,26 +1,116 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import type { UserDTO } from "@sportlink/types";
+import { authApi } from "@/lib/api";
+import { clearStoredSession, getStoredSession } from "@/lib/auth";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<UserDTO | null>(null);
+
+  // Check if we're on a game detail page, but exclude the create route.
+  const isGameDetailPage = pathname ? /^\/games\/(?!create$)[^/]+$/.test(pathname) : false;
+
+  const navItems = [
+    { href: "/", label: isGameDetailPage ? "Game details" : "Browse games" },
+    { href: "/games/create", label: "Create game" },
+    { href: "/profile", label: "My profile" },
+  ];
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setUser(getStoredSession()?.user ?? null);
+    };
+
+    syncAuth();
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("sportlink-auth-changed", syncAuth);
+
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("sportlink-auth-changed", syncAuth);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error(
+        "Failed to clear auth cookie on server during logout. Local session cleared.",
+        error,
+      );
+    }
+    clearStoredSession();
+    router.push("/");
+  };
+
   return (
-    <nav className="border-b border-gray-100 px-4 h-14 flex items-center justify-between">
-      <Link href="/" className="text-lg font-medium" style={{ color: "#1D9E75" }}>
-        SportLink
-      </Link>
-      <div className="flex items-center gap-3">
-        <Link
-          href="/games/create"
-          className="text-sm px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-        >
-          Create game
-        </Link>
-        <Link
-          href="/auth/login"
-          className="text-sm px-4 py-2 rounded-lg text-white transition-colors"
-          style={{ backgroundColor: "#1D9E75" }}
-        >
-          Sign in
-        </Link>
+    <header className="px-6 pt-5 sm:px-8">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-[18px] border border-[var(--sportlink-border)] bg-[var(--sportlink-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--sportlink-border)] px-5 py-4 sm:px-6">
+          <Link
+            href="/"
+            className="text-[2rem] font-semibold tracking-[-0.04em] text-[var(--sportlink-green)]"
+          >
+            Sportlink
+          </Link>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="hidden rounded-xl border border-[#5f5e58] bg-[#232321] px-4 py-2 text-sm text-[#d9d7ce] sm:block">
+                Hi, {user.name}
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl border border-[#7f7d74] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:bg-[#353530]"
+              >
+                Log out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/auth/login"
+                className="rounded-xl border border-[#66665f] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:border-[#7b7a73] hover:bg-[#353530]"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-xl border border-[#8a887f] px-5 py-2 text-sm font-semibold text-[#f2f0e8] transition hover:bg-[#353530]"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <nav className="flex items-center gap-8 px-5 sm:px-6">
+          {navItems.map((item) => {
+            const active =
+              item.href === "/" ? pathname === "/" || isGameDetailPage : pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`border-b-2 py-3 text-sm font-semibold transition ${
+                  active
+                    ? "border-[var(--sportlink-green)] text-[var(--sportlink-green)]"
+                    : "border-transparent text-[var(--sportlink-text-soft)] hover:text-[#efede5]"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }

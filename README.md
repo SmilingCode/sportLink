@@ -4,17 +4,17 @@ Location-based social sports platform. Find and join verified pickup games near 
 
 ## Stack
 
-| Layer | Tech |
-|-------|------|
-| Frontend | Next.js 14 (App Router), Tailwind, SWR |
-| Backend | Node.js, Fastify, Zod |
-| Database | PostgreSQL + PostGIS, Prisma ORM |
-| Cache | Redis |
-| Auth | JWT (API) + NextAuth (SSO frontend) |
-| Identity | Stripe Identity (ID + selfie) |
-| Notifications | Resend (email) + Twilio (SMS) |
-| Maps | Mapbox |
-| Monorepo | Turborepo |
+| Layer         | Tech                                   |
+| ------------- | -------------------------------------- |
+| Frontend      | Next.js 14 (App Router), Tailwind, SWR |
+| Backend       | Node.js, Fastify, Zod                  |
+| Database      | PostgreSQL + PostGIS, Prisma ORM       |
+| Cache         | Redis                                  |
+| Auth          | JWT (API) + NextAuth (SSO frontend)    |
+| Identity      | Stripe Identity (ID + selfie)          |
+| Notifications | Resend (email) + Twilio (SMS)          |
+| Maps          | Mapbox                                 |
+| Monorepo      | Turborepo                              |
 
 ## Project structure
 
@@ -79,19 +79,19 @@ npm run dev
 
 ## API routes
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | /auth/signup | — | Create account |
-| POST | /auth/login | — | Login, get JWT |
-| GET | /auth/me | JWT | Current user |
-| GET | /games | — | List games (radius filter) |
-| GET | /games/:id | — | Game detail |
-| POST | /games | JWT + verified | Create game |
-| POST | /games/:id/join | JWT + verified | Join game |
-| DELETE | /games/:id/leave | JWT | Leave game |
-| PATCH | /users/me | JWT | Update profile |
-| POST | /verify/session | JWT | Start Stripe Identity |
-| POST | /verify/webhook | Stripe sig | Verification result |
+| Method | Path             | Auth           | Description                |
+| ------ | ---------------- | -------------- | -------------------------- |
+| POST   | /auth/signup     | —              | Create account             |
+| POST   | /auth/login      | —              | Login, get JWT             |
+| GET    | /auth/me         | JWT            | Current user               |
+| GET    | /games           | —              | List games (radius filter) |
+| GET    | /games/:id       | —              | Game detail                |
+| POST   | /games           | JWT + verified | Create game                |
+| POST   | /games/:id/join  | JWT + verified | Join game                  |
+| DELETE | /games/:id/leave | JWT            | Leave game                 |
+| PATCH  | /users/me        | JWT            | Update profile             |
+| POST   | /verify/session  | JWT            | Start Stripe Identity      |
+| POST   | /verify/webhook  | Stripe sig     | Verification result        |
 
 ## Stripe Identity setup
 
@@ -104,14 +104,17 @@ npm run dev
 ## Deployment
 
 **Frontend (Vercel)**
+
 ```bash
 vercel --cwd apps/web
 ```
 
 **Backend (Railway)**
+
 ```bash
 railway up --service api
 ```
+
 Set env vars in Railway dashboard. Add a PostgreSQL + Redis service.
 
 ## Next steps
@@ -122,3 +125,24 @@ Set env vars in Railway dashboard. Add a PostgreSQL + Redis service.
 - [ ] Add Google/Apple SSO via NextAuth
 - [ ] Add Redis caching for radius queries
 - [ ] Build the game detail page
+
+## TO-DO
+
+- [] cookie-based Auth
+  Auth hardening: migrate from localStorage token to HttpOnly cookie.
+  Update login/signup to set server cookie instead of storing token in browser JS.
+  Update authenticated API calls to use cookie session.
+  Implement logout that clears cookie.
+  Add CSRF protection strategy and test login/create-game/logout flow.
+
+- [] Save draft with "draft" Game status
+    ```
+    enum GameStatus {
+        draft      // ← add this
+        open
+        full
+        cancelled
+        completed
+    }
+    ```
+- [] Add email verification

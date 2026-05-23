@@ -46,7 +46,7 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
         event = stripe.webhooks.constructEvent(
           (request as any).rawBody,
           sig,
-          env.STRIPE_WEBHOOK_SECRET
+          env.STRIPE_WEBHOOK_SECRET,
         );
       } catch {
         return reply.badRequest("Invalid webhook signature");
@@ -71,6 +71,6 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
       }
 
       return { received: true };
-    }
+    },
   );
 };

@@ -62,7 +62,7 @@ export interface GameDTO {
   minPlayers: number;
   maxPlayers: number;
   currentPlayers: number;
-  costPerPlayer: number; // 0 = free, in AUD cents
+  costPerPlayer: number; // 0 = free, in AUD dollars
   equipmentNotes?: string;
   description?: string;
   status: GameStatus;
@@ -70,24 +70,23 @@ export interface GameDTO {
   createdAt: string;
 }
 
-export interface GameSummaryDTO
-  extends Pick<
-    GameDTO,
-    | "id"
-    | "title"
-    | "sport"
-    | "skillLevel"
-    | "gender"
-    | "dateTime"
-    | "location"
-    | "distanceKm"
-    | "minPlayers"
-    | "maxPlayers"
-    | "currentPlayers"
-    | "costPerPlayer"
-    | "status"
-    | "host"
-  > {}
+export interface GameSummaryDTO extends Pick<
+  GameDTO,
+  | "id"
+  | "title"
+  | "sport"
+  | "skillLevel"
+  | "gender"
+  | "dateTime"
+  | "location"
+  | "distanceKm"
+  | "minPlayers"
+  | "maxPlayers"
+  | "currentPlayers"
+  | "costPerPlayer"
+  | "status"
+  | "host"
+> {}
 
 // ─── API request bodies ───────────────────────────────────────────────────────
 
@@ -109,6 +108,7 @@ export interface CreateGameBody {
   costPerPlayer: number;
   equipmentNotes?: string;
   description?: string;
+  verifiedPlayersOnly?: boolean;
 }
 
 export interface ListGamesQuery {
@@ -149,6 +149,5 @@ export interface AuthTokenPayload {
 }
 
 export interface LoginResponse {
-  accessToken: string;
   user: UserDTO;
 }

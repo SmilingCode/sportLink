@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "../lib/db.js";
 import { authenticate } from "../lib/auth.js";
@@ -47,6 +48,11 @@ export const gamesRoutes: FastifyPluginAsync = async (app) => {
     // PostGIS raw query for radius filtering
     const offset = (page - 1) * limit;
     const radiusMetres = radiusToMetres(radiusKm);
+    const sportFilter = sport ? Prisma.sql`AND g.sport = ${sport}` : Prisma.empty;
+    const skillLevelFilter = skillLevel
+      ? Prisma.sql`AND g."skillLevel" = ${skillLevel}`
+      : Prisma.empty;
+    const genderFilter = gender ? Prisma.sql`AND g.gender = ${gender}` : Prisma.empty;
 
     // Using Prisma $queryRaw with PostGIS ST_DWithin
     const games = await db.$queryRaw<any[]>`
@@ -71,9 +77,9 @@ export const gamesRoutes: FastifyPluginAsync = async (app) => {
         )
         AND g.status = 'open'
         AND g."dateTime" > NOW()
-        ${sport ? db.$queryRaw`AND g.sport = ${sport}` : db.$queryRaw``}
-        ${skillLevel ? db.$queryRaw`AND g."skillLevel" = ${skillLevel}` : db.$queryRaw``}
-        ${gender ? db.$queryRaw`AND g.gender = ${gender}` : db.$queryRaw``}
+        ${sportFilter}
+        ${skillLevelFilter}
+        ${genderFilter}
       ORDER BY distance_km ASC
       LIMIT ${limit} OFFSET ${offset}
     `;
@@ -109,32 +115,28 @@ export const gamesRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // POST /games — create a game (auth required + must be verified)
-  app.post(
-    "/",
-    { preHandler: authenticate },
-    async (request, reply) => {
-      const user = request.user as { sub: string; verificationStatus: string };
-      if (user.verificationStatus !== "fully_verified") {
-        return reply.forbidden("You must be fully verified to create a game");
-      }
-
-      const body = createGameSchema.safeParse(request.body);
-      if (!body.success) return reply.badRequest(body.error.message);
-
-      const game = await db.game.create({
-        data: {
-          ...body.data,
-          lat: body.data.location.lat,
-          lng: body.data.location.lng,
-          address: body.data.location.address,
-          suburb: body.data.location.suburb,
-          hostId: user.sub,
-          status: "open",
-        },
-      });
-      return reply.code(201).send(game);
+  app.post("/", { preHandler: authenticate }, async (request, reply) => {
+    const user = request.user as { sub: string; verificationStatus: string };
+    if (user.verificationStatus !== "fully_verified") {
+      return reply.forbidden("You must be fully verified to create a game");
     }
-  );
+
+    const body = createGameSchema.safeParse(request.body);
+    if (!body.success) return reply.badRequest(body.error.message);
+
+    const game = await db.game.create({
+      data: {
+        ...body.data,
+        lat: body.data.location.lat,
+        lng: body.data.location.lng,
+        address: body.data.location.address,
+        suburb: body.data.location.suburb,
+        hostId: user.sub,
+        status: "open",
+      },
+    });
+    return reply.code(201).send(game);
+  });
 
   // POST /games/:id/join
   app.post("/:id/join", { preHandler: authenticate }, async (request, reply) => {
