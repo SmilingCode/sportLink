@@ -169,7 +169,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     });
 
     reply.header("Set-Cookie", authCookie(token));
-    return reply.code(201).send({ accessToken: token, user: toUserDTO(user) });
+    return reply.code(201).send({ user: toUserDTO(user) });
   });
 
   // POST /auth/login
@@ -193,7 +193,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     });
 
     reply.header("Set-Cookie", authCookie(token));
-    return reply.send({ accessToken: token, user: toUserDTO(user) });
+    return reply.send({ user: toUserDTO(user) });
   });
 
   // POST /auth/logout — clear auth cookie

@@ -27,13 +27,10 @@ export default function ProfilePage() {
   useEffect(() => {
     const session = getStoredSession();
 
-    if (!session) {
-      router.replace("/auth/login?next=%2Fprofile");
-      return;
+    if (session) {
+      setUser(session.user);
+      setAuthChecked(true);
     }
-
-    setUser(session.user);
-    setAuthChecked(true);
 
     async function syncCurrentUser() {
       try {
@@ -41,10 +38,12 @@ export default function ProfilePage() {
         setUser(freshUser);
         setStoredSession({ user: freshUser });
       } catch (error) {
-        if (error instanceof ApiError && error.statusCode === 401) {
+        if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
           clearStoredSession();
           router.replace("/auth/login?next=%2Fprofile");
         }
+      } finally {
+        setAuthChecked(true);
       }
     }
 
