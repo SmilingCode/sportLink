@@ -20,7 +20,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<UserDTO | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({ email: true });
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
@@ -33,17 +32,14 @@ export default function ProfilePage() {
       return;
     }
 
-    const sessionToken = session.token;
-
     setUser(session.user);
-    setToken(sessionToken);
     setAuthChecked(true);
 
     async function syncCurrentUser() {
       try {
-        const freshUser = await authApi.me(sessionToken);
+        const freshUser = await authApi.me();
         setUser(freshUser);
-        setStoredSession({ token: sessionToken, user: freshUser });
+        setStoredSession({ user: freshUser });
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
           clearStoredSession();
@@ -58,14 +54,9 @@ export default function ProfilePage() {
   const handleResendEmail = async () => {
     setResendMessage(null);
 
-    if (!token) {
-      setResendMessage("You are not logged in. Please sign in again.");
-      return;
-    }
-
     setIsResendingEmail(true);
     try {
-      await authApi.resendVerification(token);
+      await authApi.resendVerification();
       setResendMessage("Confirmation email sent again. Check your inbox and spam folder.");
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 401) {
@@ -219,7 +210,7 @@ function buildVerificationSteps(
       id: "phone",
       kind: "standard",
       title: "Phone number verification",
-      detail: "+61 4•• ••• •••",
+      detail: "Verify with a 6-digit SMS code",
       complete: state.phoneVerified,
       actionLabel: state.phoneVerified ? undefined : "Start →",
     },
