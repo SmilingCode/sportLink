@@ -11,6 +11,7 @@ const twilioClient =
   env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
     ? twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)
     : null;
+const AUTH_COOKIE_NAME = "sportlink_access_token";
 
 const phoneSendSchema = z.object({
   phone: z.string().min(10).max(14),
@@ -43,6 +44,11 @@ function maskPhoneForDisplay(e164Phone: string) {
 
   const mobile = digits.slice(2);
   return `+61 ${mobile[0]}xx xxx xxx`;
+}
+
+function authCookie(token: string) {
+  const secure = env.NODE_ENV === "production" ? "Secure; " : "";
+  return `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; ${secure}SameSite=Lax`;
 }
 
 function nextPhoneVerificationStatus(currentStatus: string) {
@@ -184,20 +190,29 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
 
     const user = await db.user.findUnique({
       where: { id: payload.sub },
-      select: { verificationStatus: true },
+      select: { email: true, verificationStatus: true },
     });
 
     if (!user) {
       return reply.unauthorized();
     }
 
+    const verificationStatus = nextPhoneVerificationStatus(user.verificationStatus);
+
     await db.user.update({
       where: { id: payload.sub },
       data: {
         phone: normalizedPhone,
-        verificationStatus: nextPhoneVerificationStatus(user.verificationStatus),
+        verificationStatus,
       },
     });
+
+    const token = app.jwt.sign({
+      sub: payload.sub,
+      email: user.email,
+      verificationStatus,
+    });
+    reply.header("Set-Cookie", authCookie(token));
 
     return { verified: true };
   });
