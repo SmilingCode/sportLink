@@ -32,11 +32,15 @@ export function useProfileVerification({
   const [isStartingIdVerification, setIsStartingIdVerification] = useState(false);
   const [idVerificationError, setIdVerificationError] = useState<string | null>(null);
   const [idVerificationDetail, setIdVerificationDetail] = useState<string | null>(null);
+  const [idVerificationStatus, setIdVerificationStatus] = useState<
+    "not_started" | "under_review" | "review_failed" | "verified" | "canceled" | null
+  >(null);
 
   const loadIdVerificationStatus = async () => {
     try {
-      const status = await verifyApi.getIdStatus();
-      setIdVerificationDetail(status.detail);
+      const result = await verifyApi.getIdStatus();
+      setIdVerificationDetail(result.detail);
+      setIdVerificationStatus(result.status);
     } catch (error) {
       if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
         onUnauthorized();
@@ -268,6 +272,7 @@ export function useProfileVerification({
     phoneSendMessage,
     idVerificationError,
     idVerificationDetail,
+    idVerificationStatus,
     setExpandedSteps,
     setResendMessage,
     handleResendEmail,

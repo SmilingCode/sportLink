@@ -22,6 +22,7 @@ type VerificationSectionProps = {
   phoneSendMessage: string | null;
   isStartingIdVerification: boolean;
   idVerificationError: string | null;
+  idVerificationStatus: "not_started" | "under_review" | "review_failed" | "verified" | "canceled" | null;
   onResendEmail: () => void;
   onBackToEmailInstructions: () => void;
   onToggleStep: (stepId: string) => void;
@@ -56,6 +57,7 @@ export default function VerificationSection({
   phoneSendMessage,
   isStartingIdVerification,
   idVerificationError,
+  idVerificationStatus,
   onResendEmail,
   onBackToEmailInstructions,
   onToggleStep,
@@ -122,7 +124,7 @@ export default function VerificationSection({
             />
           ) : step.id === "id" && !step.complete ? (
             (() => {
-              const isIdAlreadyVerified = step.detail.toLowerCase().includes("identity verified");
+              const isIdAlreadyVerified = idVerificationStatus === "verified";
 
               return (
                 <VerificationRow

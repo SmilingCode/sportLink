@@ -125,6 +125,7 @@ export default function ProfilePage() {
           phoneSendMessage={verification.phoneSendMessage}
           isStartingIdVerification={verification.isStartingIdVerification}
           idVerificationError={verification.idVerificationError}
+          idVerificationStatus={verification.idVerificationStatus}
           onResendEmail={verification.handleResendEmail}
           onBackToEmailInstructions={() => verification.setResendMessage(null)}
           onToggleStep={(stepId) =>
