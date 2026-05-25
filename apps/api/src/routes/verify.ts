@@ -182,6 +182,25 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const session = await stripe.identity.verificationSessions.retrieve(user.stripeSessionId);
+
+      if (session.status === "verified") {
+        await db.user.update({
+          where: { id: payload.sub },
+          data: {
+            verificationStatus:
+              user.verificationStatus === "phone_verified" ? "fully_verified" : "id_verified",
+            stripeSessionId: null,
+          },
+        });
+      } else if (session.status === "canceled") {
+        await db.user.update({
+          where: { id: payload.sub },
+          data: {
+            stripeSessionId: null,
+          },
+        });
+      }
+
       return mapIdSessionStatus(session);
     } catch (error) {
       app.log.error(
