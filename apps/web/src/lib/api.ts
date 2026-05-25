@@ -98,6 +98,11 @@ export const authApi = {
 export const verifyApi = {
   createSession: (token?: string) =>
     request<{ clientSecret: string }>("/verify/session", { method: "POST" }, token),
+  getIdStatus: (token?: string) =>
+    request<{
+      status: "not_started" | "under_review" | "review_failed" | "verified" | "canceled";
+      detail: string;
+    }>("/verify/id-status", {}, token),
   sendPhoneCode: (phone: string, token?: string) =>
     request<{ sent: boolean; maskedPhone?: string }>(
       "/verify/phone/send",

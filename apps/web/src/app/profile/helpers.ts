@@ -21,6 +21,7 @@ export function getVerificationState(status: UserDTO["verificationStatus"]) {
 export function buildVerificationSteps(
   state: ReturnType<typeof getVerificationState>,
   email: string,
+  idDetail = "Upload a passport or driver's licence",
 ): VerificationStep[] {
   return [
     {
@@ -42,7 +43,7 @@ export function buildVerificationSteps(
       id: "id",
       kind: "standard",
       title: "Government ID verification",
-      detail: "Upload a passport or driver's licence",
+      detail: idDetail,
       complete: state.idVerified,
       actionLabel: state.idVerified ? undefined : "Start →",
     },

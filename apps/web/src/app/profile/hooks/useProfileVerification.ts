@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { UserDTO } from "@sportlink/types";
 import { ApiError, authApi, verifyApi } from "@/lib/api";
 import { setStoredSession } from "@/lib/auth";
+import { getStripeIdentityClient } from "@/lib/stripe";
 import { maskAuMobileForDisplay, validateAuMobile } from "@/lib/verification";
 
 type UseProfileVerificationParams = {
@@ -28,6 +29,20 @@ export function useProfileVerification({
   const [isVerifyingPhoneCode, setIsVerifyingPhoneCode] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [isStartingIdVerification, setIsStartingIdVerification] = useState(false);
+  const [idVerificationError, setIdVerificationError] = useState<string | null>(null);
+  const [idVerificationDetail, setIdVerificationDetail] = useState<string | null>(null);
+
+  const loadIdVerificationStatus = async () => {
+    try {
+      const status = await verifyApi.getIdStatus();
+      setIdVerificationDetail(status.detail);
+    } catch (error) {
+      if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+        onUnauthorized();
+      }
+    }
+  };
 
   const handleResendEmail = async () => {
     setResendMessage(null);
@@ -191,6 +206,46 @@ export function useProfileVerification({
     }
   };
 
+  const handleStartIdVerification = async () => {
+    setIdVerificationError(null);
+    setIsStartingIdVerification(true);
+
+    try {
+      const { clientSecret } = await verifyApi.createSession();
+      const stripeIdentity = await getStripeIdentityClient();
+      const result = await stripeIdentity.verifyIdentity(clientSecret);
+
+      if (result.error) {
+        setIdVerificationError(result.error.message ?? "ID verification was cancelled or failed.");
+        await loadIdVerificationStatus();
+        return;
+      }
+
+      const freshUser = await authApi.me();
+      setUser(freshUser);
+      setStoredSession({ user: freshUser });
+      await loadIdVerificationStatus();
+    } catch (error) {
+      if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+        onUnauthorized();
+        return;
+      }
+
+      if (
+        error instanceof Error &&
+        (error.message.includes("Stripe") || error.message.includes("stripe"))
+      ) {
+        setIdVerificationError("Stripe Identity is unavailable right now. Please try again.");
+      } else if (error instanceof Error) {
+        setIdVerificationError(error.message);
+      } else {
+        setIdVerificationError("Could not start ID verification. Please try again.");
+      }
+    } finally {
+      setIsStartingIdVerification(false);
+    }
+  };
+
   const isPhoneInputValid = validateAuMobile(phoneInput) === null;
   const isVerifyDisabled = phoneCodeDigits.some((digit) => digit === "") || isVerifyingPhoneCode;
 
@@ -209,7 +264,10 @@ export function useProfileVerification({
     phoneCodeError,
     isSendingPhoneCode,
     isVerifyingPhoneCode,
+    isStartingIdVerification,
     phoneSendMessage,
+    idVerificationError,
+    idVerificationDetail,
     setExpandedSteps,
     setResendMessage,
     handleResendEmail,
@@ -221,5 +279,7 @@ export function useProfileVerification({
     handleChangeNumber,
     handleSendPhoneCode,
     handleVerifyPhoneCode,
+    handleStartIdVerification,
+    loadIdVerificationStatus,
   };
 }
