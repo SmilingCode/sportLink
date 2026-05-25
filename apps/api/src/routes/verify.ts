@@ -111,6 +111,25 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
     const payload = request.user as { sub: string; email: string } | undefined;
     if (!payload) return reply.unauthorized();
 
+    const user = await db.user.findUnique({
+      where: { id: payload.sub },
+      select: { verificationStatus: true },
+    });
+
+    if (!user) {
+      return reply.unauthorized();
+    }
+
+    const hasEmailOrPhoneVerification =
+      user.verificationStatus === "email_verified" ||
+      user.verificationStatus === "phone_verified" ||
+      user.verificationStatus === "id_verified" ||
+      user.verificationStatus === "fully_verified";
+
+    if (!hasEmailOrPhoneVerification) {
+      return reply.badRequest("Verify your email or phone number before ID verification.");
+    }
+
     const session = await stripe.identity.verificationSessions.create({
       type: "document",
       metadata: { userId: payload.sub },
