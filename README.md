@@ -47,7 +47,8 @@ npm install
 ```bash
 # Backend
 cp apps/api/.env.example apps/api/.env
-# Fill in DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+# Fill in DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+# and Twilio Verify vars (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID)
 
 # Frontend
 cp apps/web/.env.example apps/web/.env.local
@@ -79,19 +80,21 @@ npm run dev
 
 ## API routes
 
-| Method | Path             | Auth           | Description                |
-| ------ | ---------------- | -------------- | -------------------------- |
-| POST   | /auth/signup     | —              | Create account             |
-| POST   | /auth/login      | —              | Login, get JWT             |
-| GET    | /auth/me         | JWT            | Current user               |
-| GET    | /games           | —              | List games (radius filter) |
-| GET    | /games/:id       | —              | Game detail                |
-| POST   | /games           | JWT + verified | Create game                |
-| POST   | /games/:id/join  | JWT + verified | Join game                  |
-| DELETE | /games/:id/leave | JWT            | Leave game                 |
-| PATCH  | /users/me        | JWT            | Update profile             |
-| POST   | /verify/session  | JWT            | Start Stripe Identity      |
-| POST   | /verify/webhook  | Stripe sig     | Verification result        |
+| Method | Path                | Auth                   | Description                 |
+| ------ | ------------------- | ---------------------- | --------------------------- |
+| POST   | /auth/signup        | —                      | Create account              |
+| POST   | /auth/login         | —                      | Login, set auth cookie      |
+| GET    | /auth/me            | Auth cookie            | Current user                |
+| GET    | /games              | —                      | List games (radius filter)  |
+| GET    | /games/:id          | —                      | Game detail                 |
+| POST   | /games              | Auth cookie + verified | Create game                 |
+| POST   | /games/:id/join     | Auth cookie + verified | Join game                   |
+| DELETE | /games/:id/leave    | Auth cookie            | Leave game                  |
+| PATCH  | /users/me           | Auth cookie            | Update profile              |
+| POST   | /verify/session     | Auth cookie            | Start Stripe Identity       |
+| POST   | /verify/phone/send  | Auth cookie            | Send SMS verification code  |
+| POST   | /verify/phone/check | Auth cookie            | Check SMS verification code |
+| POST   | /verify/webhook     | Stripe sig             | Verification result         |
 
 ## Stripe Identity setup
 
