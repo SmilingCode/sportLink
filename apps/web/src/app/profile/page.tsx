@@ -55,6 +55,18 @@ export default function ProfilePage() {
     void syncCurrentUser();
   }, [handleUnauthorized]);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    if (user.verificationStatus === "id_verified" || user.verificationStatus === "fully_verified") {
+      return;
+    }
+
+    void verification.loadIdVerificationStatus();
+  }, [user?.verificationStatus]);
+
   if (!authChecked) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-6 sm:px-8">
@@ -68,7 +80,11 @@ export default function ProfilePage() {
   }
 
   const verificationState = getVerificationState(user.verificationStatus);
-  const verificationSteps = buildVerificationSteps(verificationState, user.email);
+  const verificationSteps = buildVerificationSteps(
+    verificationState,
+    user.email,
+    verification.idVerificationDetail ?? undefined,
+  );
   const joinedMonth = new Date(user.createdAt).toLocaleDateString("en-AU", {
     month: "long",
     year: "numeric",
@@ -107,6 +123,9 @@ export default function ProfilePage() {
           isSendingPhoneCode={verification.isSendingPhoneCode}
           isVerifyingPhoneCode={verification.isVerifyingPhoneCode}
           phoneSendMessage={verification.phoneSendMessage}
+          isStartingIdVerification={verification.isStartingIdVerification}
+          idVerificationError={verification.idVerificationError}
+          idVerificationStatus={verification.idVerificationStatus}
           onResendEmail={verification.handleResendEmail}
           onBackToEmailInstructions={() => verification.setResendMessage(null)}
           onToggleStep={(stepId) =>
@@ -124,6 +143,7 @@ export default function ProfilePage() {
           onSendPhoneCode={() => void verification.handleSendPhoneCode()}
           onResendPhoneCode={() => void verification.handleSendPhoneCode({ isResend: true })}
           onVerifyPhoneCode={() => void verification.handleVerifyPhoneCode()}
+          onStartIdVerification={() => void verification.handleStartIdVerification()}
         />
       </section>
     </main>

@@ -20,6 +20,9 @@ type VerificationSectionProps = {
   isSendingPhoneCode: boolean;
   isVerifyingPhoneCode: boolean;
   phoneSendMessage: string | null;
+  isStartingIdVerification: boolean;
+  idVerificationError: string | null;
+  idVerificationStatus: "not_started" | "under_review" | "review_failed" | "verified" | "canceled" | null;
   onResendEmail: () => void;
   onBackToEmailInstructions: () => void;
   onToggleStep: (stepId: string) => void;
@@ -32,6 +35,7 @@ type VerificationSectionProps = {
   onSendPhoneCode: () => void;
   onResendPhoneCode: () => void;
   onVerifyPhoneCode: () => void;
+  onStartIdVerification: () => void;
 };
 
 export default function VerificationSection({
@@ -51,6 +55,9 @@ export default function VerificationSection({
   isSendingPhoneCode,
   isVerifyingPhoneCode,
   phoneSendMessage,
+  isStartingIdVerification,
+  idVerificationError,
+  idVerificationStatus,
   onResendEmail,
   onBackToEmailInstructions,
   onToggleStep,
@@ -63,6 +70,7 @@ export default function VerificationSection({
   onSendPhoneCode,
   onResendPhoneCode,
   onVerifyPhoneCode,
+  onStartIdVerification,
 }: VerificationSectionProps) {
   return (
     <section className="space-y-3">
@@ -114,6 +122,25 @@ export default function VerificationSection({
               onResendCode={onResendPhoneCode}
               onVerifyCode={onVerifyPhoneCode}
             />
+          ) : step.id === "id" && !step.complete ? (
+            (() => {
+              const isIdAlreadyVerified = idVerificationStatus === "verified";
+
+              return (
+                <VerificationRow
+                  key={step.id}
+                  step={
+                    isIdAlreadyVerified
+                      ? { ...step, complete: true, actionLabel: undefined }
+                      : step
+                  }
+                  index={index + 1}
+                  onAction={isIdAlreadyVerified ? undefined : onStartIdVerification}
+                  isLoading={isIdAlreadyVerified ? false : isStartingIdVerification}
+                  error={isIdAlreadyVerified ? null : idVerificationError}
+                />
+              );
+            })()
           ) : (
             <VerificationRow key={step.id} step={step} index={index + 1} />
           ),
@@ -127,45 +154,54 @@ function VerificationRow({
   step,
   index,
   onAction,
+  isLoading = false,
+  error,
 }: {
   step: VerificationStep;
   index: number;
   onAction?: () => void;
+  isLoading?: boolean;
+  error?: string | null;
 }) {
   return (
-    <div
-      className={`flex items-center gap-4 rounded-2xl border px-4 py-4 sm:px-5 ${
-        step.complete
-          ? "border-[rgba(0,200,148,0.36)] bg-[#2a2a27]"
-          : "border-[var(--sportlink-border)] bg-[#2a2a27]"
-      }`}
-    >
+    <div className="space-y-2">
       <div
-        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
+        className={`flex items-center gap-4 rounded-2xl border px-4 py-4 sm:px-5 ${
           step.complete
-            ? "bg-[rgba(0,200,148,0.18)] text-[var(--sportlink-green)]"
-            : "bg-[rgba(0,200,148,0.16)] text-[#d9f6ec]"
+            ? "border-[rgba(0,200,148,0.36)] bg-[#2a2a27]"
+            : "border-[var(--sportlink-border)] bg-[#2a2a27]"
         }`}
       >
-        {step.complete ? <Check className="h-5 w-5" strokeWidth={2.25} /> : index}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="font-semibold text-[#f1efe8]">{step.title}</div>
-        <div className="truncate text-sm text-[var(--sportlink-text-soft)]">{step.detail}</div>
-      </div>
-
-      {step.actionLabel ? (
-        <button
-          type="button"
-          onClick={onAction}
-          className="rounded-xl border border-[#6f6e67] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#8a887f] hover:bg-[#31312d]"
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
+            step.complete
+              ? "bg-[rgba(0,200,148,0.18)] text-[var(--sportlink-green)]"
+              : "bg-[rgba(0,200,148,0.16)] text-[#d9f6ec]"
+          }`}
         >
-          {step.actionLabel}
-        </button>
-      ) : (
-        <span className="text-sm font-semibold text-[var(--sportlink-green)]">Complete</span>
-      )}
+          {step.complete ? <Check className="h-5 w-5" strokeWidth={2.25} /> : index}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-[#f1efe8]">{step.title}</div>
+          <div className="truncate text-sm text-[var(--sportlink-text-soft)]">{step.detail}</div>
+        </div>
+
+        {step.actionLabel ? (
+          <button
+            type="button"
+            onClick={onAction}
+            disabled={isLoading}
+            className="rounded-xl border border-[#6f6e67] px-4 py-2 text-sm font-semibold text-[#f3f2ee] transition hover:border-[#8a887f] hover:bg-[#31312d] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
+          >
+            {isLoading ? "Starting..." : step.actionLabel}
+          </button>
+        ) : (
+          <span className="text-sm font-semibold text-[var(--sportlink-green)]">Complete</span>
+        )}
+      </div>
+
+      {error ? <p className="text-sm text-[#ff9b93]">{error}</p> : null}
     </div>
   );
 }

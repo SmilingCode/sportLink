@@ -72,6 +72,41 @@ function assertPhoneVerificationEnabled(reply: { serviceUnavailable: (message: s
   return true;
 }
 
+function mapIdSessionStatus(session: Stripe.Identity.VerificationSession) {
+  if (session.status === "verified") {
+    return {
+      status: "verified",
+      detail: "Identity verified",
+    };
+  }
+
+  if (session.status === "processing") {
+    return {
+      status: "under_review",
+      detail: "Submitted. Your ID is under review",
+    };
+  }
+
+  if (session.status === "requires_input") {
+    return {
+      status: "review_failed",
+      detail: "Review failed. Please try again with clearer ID photos",
+    };
+  }
+
+  if (session.status === "canceled") {
+    return {
+      status: "canceled",
+      detail: "Verification was canceled. Start again when ready",
+    };
+  }
+
+  return {
+    status: "not_started",
+    detail: "Upload a passport or driver's licence",
+  };
+}
+
 export const verifyRoutes: FastifyPluginAsync = async (app) => {
   /**
    * POST /verify/session — create a Stripe Identity verification session.
@@ -81,6 +116,25 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
   app.post("/session", { preHandler: authenticate }, async (request, reply) => {
     const payload = request.user as { sub: string; email: string } | undefined;
     if (!payload) return reply.unauthorized();
+
+    const user = await db.user.findUnique({
+      where: { id: payload.sub },
+      select: { verificationStatus: true },
+    });
+
+    if (!user) {
+      return reply.unauthorized();
+    }
+
+    const hasEmailOrPhoneVerification =
+      user.verificationStatus === "email_verified" ||
+      user.verificationStatus === "phone_verified" ||
+      user.verificationStatus === "id_verified" ||
+      user.verificationStatus === "fully_verified";
+
+    if (!hasEmailOrPhoneVerification) {
+      return reply.badRequest("Verify your email or phone number before ID verification.");
+    }
 
     const session = await stripe.identity.verificationSessions.create({
       type: "document",
@@ -92,7 +146,75 @@ export const verifyRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
+    await db.user.update({
+      where: { id: payload.sub },
+      data: { stripeSessionId: session.id },
+    });
+
     return { clientSecret: session.client_secret };
+  });
+
+  app.get("/id-status", { preHandler: authenticate }, async (request, reply) => {
+    const payload = request.user as { sub: string } | undefined;
+    if (!payload) {
+      return reply.unauthorized();
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        verificationStatus: true,
+        stripeSessionId: true,
+      },
+    });
+
+    if (!user) {
+      return reply.unauthorized();
+    }
+
+    if (user.verificationStatus === "id_verified" || user.verificationStatus === "fully_verified") {
+      return {
+        status: "verified",
+        detail: "Identity verified",
+      };
+    }
+
+    if (!user.stripeSessionId) {
+      return {
+        status: "not_started",
+        detail: "Upload a passport or driver's licence",
+      };
+    }
+
+    try {
+      const session = await stripe.identity.verificationSessions.retrieve(user.stripeSessionId);
+
+      if (session.status === "verified") {
+        await db.user.update({
+          where: { id: payload.sub },
+          data: {
+            verificationStatus:
+              user.verificationStatus === "phone_verified" ? "fully_verified" : "id_verified",
+            stripeSessionId: null,
+          },
+        });
+      } else if (session.status === "canceled") {
+        await db.user.update({
+          where: { id: payload.sub },
+          data: {
+            stripeSessionId: null,
+          },
+        });
+      }
+
+      return mapIdSessionStatus(session);
+    } catch (error) {
+      app.log.error(
+        { err: error, userId: payload.sub, stripeSessionId: user.stripeSessionId },
+        "Failed to load Stripe ID verification session status",
+      );
+      return reply.badGateway("Could not load ID verification status.");
+    }
   });
 
   app.post("/phone/send", { preHandler: authenticate }, async (request, reply) => {
